@@ -1,0 +1,998 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Evinra – Own Every Spend</title>
+    <!-- Evinra shared DB client (talks to evinra-shared-db on :4000) -->
+    <script src="evinra-db.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Syne:wght@400;700&display=swap">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg0); color: var(--text1); line-height: 1.6; overflow-x: hidden; transition: background-color 0.2s, color 0.2s; }
+        [data-theme="light"] { --bg0: #F8FAFC; --bg1: #F1F5FB; --bg2: #EBF0F8; --bg3: #E5E9F2; --text1: #0F1B2E; --text2: #334866; --text3: #668099; --text4: #99AABC; }
+        [data-theme="dark"] { --bg0: #050E22; --bg1: #071428; --bg2: #0C1B38; --bg3: #112244; --text1: #EDF2F9; --text2: #94AED4; --text3: #556E9A; --text4: #3A4F73; }
+        :root { --teal: #209991; --teal-light: #2DB8AE; --teal-dim: rgba(32, 153, 145, 0.14); --amber: #D97706; --amber-light: #F59E0B; --amber-dim: rgba(245, 158, 11, 0.14); --amber-border: rgba(245, 158, 11, 0.4); --violet: #8B5CF6; --violet-light: #A78BFA; --violet-dim: rgba(139, 92, 246, 0.15); --violet-border: rgba(139, 92, 246, 0.4); --blue: #3B82F6; --blue-light: #60A5FA; --blue-dim: rgba(96, 165, 250, 0.15); --blue-border: rgba(96, 165, 250, 0.4); --red: #DC2626; --red-light: #EF4444; --green: #10B981; --green-light: #34D399; --spring: cubic-bezier(0.34, 1.56, 0.64, 1); --ease-out: cubic-bezier(0.16, 1, 0.3, 1); --ease-in: cubic-bezier(0.7, 0, 1, 0.3); }
+        header { position: sticky; top: 0; z-index: 100; height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: rgba(7, 20, 40, 0.85); backdrop-filter: blur(8px); border-bottom: 1px solid var(--bg3); }
+        .logo { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; color: var(--teal-light); }
+        .theme-toggle { width: 44px; height: 44px; border: none; background: rgba(255,255,255,0.08); color: #EDF2F9; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s ease-out, transform 0.15s ease-out; touch-action: manipulation; }
+        .theme-toggle svg { width: 20px; height: 20px; }
+        .theme-toggle:hover { background: rgba(255,255,255,0.14); }
+        .theme-toggle:active { background: rgba(255,255,255,0.2); transform: scale(0.94); }
+        .theme-toggle:focus-visible { outline: 2px solid var(--teal-light); outline-offset: 2px; }
+        .hero { padding: 16px; margin-bottom: 24px; }
+        .hero-card { border-radius: 16px; padding: 24px 16px; background: linear-gradient(135deg, rgba(32, 153, 145, 0.25) 0%, rgba(217, 119, 6, 0.15) 100%); position: relative; overflow: hidden; min-height: 200px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border: 1px solid var(--bg3); }
+        .hero-card::before { content: ''; position: absolute; top: -50%; right: -50%; width: 400px; height: 400px; background: radial-gradient(circle, rgba(32, 153, 145, 0.08) 0%, transparent 70%); pointer-events: none; }
+        .hero-card > * { position: relative; z-index: 1; }
+        .hero-date { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .hero-title { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 700; color: var(--text1); margin-bottom: 8px; }
+        .hero-desc { font-size: 14px; color: var(--text2); margin-bottom: 16px; }
+        .hero-cta { padding: 12px 24px; background: var(--teal-light); color: #050E22; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.2s ease-out; }
+        .hero-cta:active { transform: scale(0.95); }
+        .own-every-spend { padding: 16px; margin: 0 16px 24px; background: var(--bg2); border-radius: 12px; }
+        .own-title { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .category-dots { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .dot-label { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: var(--text2); text-align: center; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot.tickets { background: #3B82F6; }
+        .dot.parking { background: var(--amber-light); }
+        .dot.food { background: #EC4899; }
+        .dot.experiences { background: var(--green-light); }
+        .dot.merch { background: #8B5CF6; }
+        .tabs { display: flex; gap: 8px; padding: 0 16px 16px; overflow-x: auto; scroll-behavior: smooth; }
+        .tab { padding: 10px 16px; background: var(--bg2); border: none; border-radius: 8px; color: var(--text2); font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: all 0.15s ease-out; flex-shrink: 0; }
+        .tab.active { background: var(--teal); color: #050E22; font-weight: 600; }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 0 16px 100px; }
+        @media (min-width: 768px) { .grid { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
+        .product-card { background: var(--bg2); border-radius: 12px; overflow: hidden; transition: all 0.2s ease-out; display: flex; flex-direction: column; animation: slideUp 0.4s var(--ease-out) both; border: 1px solid var(--bg3); }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        .product-card:active { transform: translateY(-4px); }
+        .product-image { width: 100%; height: 120px; background: linear-gradient(135deg, var(--bg3) 0%, var(--bg2) 100%); border-bottom: 2px solid var(--teal); display: flex; align-items: center; justify-content: center; font-size: 48px; }
+        .product-body { padding: 12px; flex: 1; display: flex; flex-direction: column; }
+        .product-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--amber); margin-bottom: 4px; }
+        .product-name { font-size: 14px; font-weight: 600; color: var(--text1); margin-bottom: 4px; }
+        .product-desc { font-size: 12px; color: var(--text3); margin-bottom: 8px; flex: 1; }
+        .product-price { font-size: 16px; font-weight: 700; color: var(--teal-light); margin-bottom: 2px; }
+        .product-per { font-size: 11px; color: var(--text3); margin-bottom: 8px; }
+        .product-controls { display: flex; gap: 8px; }
+        .qty-stepper { display: flex; gap: 4px; background: var(--bg3); border-radius: 6px; padding: 4px; flex: 1; }
+        .qty-btn { width: 28px; height: 28px; border: none; background: transparent; color: var(--text1); cursor: pointer; border-radius: 4px; font-weight: 600; transition: all 0.15s ease-out; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+        .qty-btn:active { background: var(--bg2); }
+        .qty-display { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: var(--text1); }
+        .add-btn { padding: 8px 12px; background: var(--teal); color: #050E22; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; transition: all 0.15s ease-out; width: 100%; }
+        .add-btn:active { transform: scale(0.95); }
+        .bundles-section { margin: 40px 0; padding: 0 16px; }
+        .section-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; color: var(--text1); margin-bottom: 16px; }
+        .bundles-carousel { display: flex; gap: 12px; overflow-x: auto; scroll-behavior: smooth; padding-bottom: 8px; }
+        .bundle-card { flex-shrink: 0; width: 240px; background: var(--bg2); border-radius: 12px; padding: 16px; border: 1px solid var(--bg3); transition: all 0.2s ease-out; display: flex; flex-direction: column; }
+        .bundle-card:active { transform: translateY(-4px); }
+        .bundle-name { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--text1); margin-bottom: 8px; }
+        .bundle-items { font-size: 12px; color: var(--text3); margin-bottom: 12px; }
+        .bundle-pricing { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 12px; }
+        .bundle-price-orig { font-size: 12px; color: var(--text4); text-decoration: line-through; }
+        .bundle-price { font-size: 18px; font-weight: 700; color: var(--teal-light); }
+        .bundle-save { margin-left: auto; font-size: 10px; background: var(--green); color: white; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+        .bundle-btn { padding: 10px; background: var(--teal); color: #050E22; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; transition: all 0.15s ease-out; }
+        .bundle-btn:active { transform: scale(0.95); }
+        .cart-bar { position: fixed; bottom: 64px; left: 0; right: 0; padding: 12px 16px; background: var(--teal); color: #050E22; display: flex; justify-content: space-between; align-items: center; gap: 12px; z-index: 50; transform: translateY(120px); transition: transform 0.3s var(--spring); border-top: 1px solid rgba(0,0,0,0.1); }
+        .cart-bar.show { transform: translateY(0); }
+        .cart-info { display: flex; flex-direction: column; gap: 2px; }
+        .cart-count { font-size: 12px; font-weight: 500; opacity: 0.8; }
+        .cart-total { font-size: 16px; font-weight: 700; }
+        .cart-checkout { padding: 10px 16px; background: #050E22; color: var(--teal-light); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; white-space: nowrap; transition: all 0.15s ease-out; }
+        .cart-checkout:active { transform: scale(0.95); }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 64px; background: var(--bg1); border-top: 1px solid var(--bg3); display: flex; z-index: 99; padding-bottom: env(safe-area-inset-bottom); }
+        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: none; border: none; color: var(--text3); font-size: 11px; cursor: pointer; position: relative; transition: color 0.15s ease-out; }
+        .nav-item.active { color: var(--teal-light); }
+        .nav-item.active::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--teal-light); }
+        .nav-icon { display: flex; align-items: center; justify-content: center; }
+        .nav-icon svg { width: 24px; height: 24px; }
+        .nav-badge { position: absolute; top: 6px; right: 8px; width: 16px; height: 16px; background: var(--red); color: white; font-size: 10px; font-weight: 700; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        @media (min-width: 768px) { .bottom-nav { display: none; } .cart-bar { bottom: 0; } }
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 200; padding: 16px; }
+        .modal-backdrop.show { display: flex; }
+        .modal { background: var(--bg1); border-radius: 16px; width: 100%; max-width: 500px; max-height: 85vh; overflow-y: auto; border: 1px solid var(--bg3); animation: modalSlide 0.3s var(--spring); }
+        @keyframes modalSlide { from { opacity: 0; transform: translateY(32px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-header { padding: 16px; border-bottom: 1px solid var(--bg3); display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; color: var(--text1); }
+        .modal-close { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 24px; padding: 0; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; transition: color 0.15s ease-out; }
+        .modal-close:active { color: var(--text1); }
+        .modal-body { padding: 24px 16px; }
+        .step { display: none; }
+        .step.active { display: block; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .step-title { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text2); margin: 0 0 12px; }
+        .step-title::after { content: ''; flex: 1; height: 1px; background: var(--bg3); }
+        .panel-section-title { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text2); margin: 22px 0 12px; }
+        .panel-section-title::after { content: ''; flex: 1; height: 1px; background: var(--bg3); }
+        .step-progress { display: flex; gap: 8px; margin-bottom: 20px; }
+        .progress-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bg3); transition: background 0.2s ease-out; }
+        .progress-dot.active { background: var(--teal-light); }
+        .progress-dot.done { background: var(--green); }
+        .date-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 20px; }
+        .date-btn { padding: 12px; background: var(--bg2); border: 2px solid var(--bg3); border-radius: 8px; color: var(--text1); cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.15s ease-out; }
+        .date-btn:active { transform: scale(0.95); }
+        .date-btn.selected { border-color: var(--teal-light); background: var(--teal-dim); }
+        .time-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 20px; }
+        .time-btn { padding: 10px; background: var(--bg2); border: 2px solid var(--bg3); border-radius: 8px; color: var(--text2); cursor: pointer; font-weight: 500; font-size: 12px; transition: all 0.15s ease-out; }
+        .time-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .time-btn.selected { border-color: var(--teal-light); background: var(--teal-dim); color: var(--teal-light); }
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text1); margin-bottom: 6px; }
+        .form-input { width: 100%; padding: 12px; background: var(--bg2); border: 2px solid var(--bg3); border-radius: 8px; color: var(--text1); font-size: 14px; font-family: 'Outfit', sans-serif; transition: all 0.15s ease-out; min-height: 44px; }
+        .form-input:focus { outline: none; border-color: var(--teal-light); background: var(--teal-dim); }
+        .form-input::placeholder { color: var(--text3); }
+        .order-summary { background: var(--bg2); border-radius: 8px; padding: 12px; margin-bottom: 20px; }
+        .summary-title { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .summary-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; font-size: 13px; color: var(--text2); border-bottom: 1px solid var(--bg3); }
+        .summary-item:last-child { border-bottom: none; }
+        .summary-item strong { color: var(--text1); }
+        .summary-total { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; margin-top: 8px; font-size: 14px; font-weight: 700; color: var(--teal-light); }
+        .confirmation-content { text-align: center; }
+        .success-checkmark { font-size: 56px; margin-bottom: 16px; animation: scaleIn 0.5s var(--spring); }
+        @keyframes scaleIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .confirmation-message { font-size: 16px; font-weight: 600; color: var(--text1); margin-bottom: 8px; }
+        .order-number { font-family: 'Syne', sans-serif; font-size: 14px; color: var(--text3); word-break: break-all; margin-bottom: 20px; }
+        .wallet { background: linear-gradient(135deg, rgba(32, 153, 145, 0.15) 0%, rgba(217, 119, 6, 0.1) 100%); border-radius: 12px; border: 1px solid var(--bg3); padding: 16px; margin-bottom: 16px; overflow: hidden; }
+        .wallet-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .event-name { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; color: var(--text1); }
+        .event-date { font-size: 11px; color: var(--text3); }
+        .wallet-details { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; font-size: 12px; color: var(--text2); }
+        .detail-item { display: flex; flex-direction: column; gap: 2px; }
+        .detail-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; }
+        .wallet-divider { border-top: 2px dashed var(--bg3); margin: 12px 0; position: relative; }
+        .wallet-divider::before, .wallet-divider::after { content: ''; position: absolute; width: 8px; height: 8px; background: var(--bg0); border-radius: 50%; top: -5px; }
+        .wallet-divider::before { left: -12px; }
+        .wallet-divider::after { right: -12px; }
+        .qr-section { text-align: center; margin-bottom: 12px; }
+        .qr-code { width: 100%; max-width: 150px; height: auto; margin: 0 auto 8px; background: white; padding: 8px; border-radius: 4px; }
+        .holder-name { font-size: 12px; font-weight: 600; color: var(--text1); }
+        .wallet-actions { display: flex; gap: 8px; }
+        .wallet-btn { flex: 1; padding: 10px; background: var(--teal); color: #050E22; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; transition: all 0.15s ease-out; }
+        .wallet-btn:active { transform: scale(0.95); }
+        .wallet-btn.secondary { background: var(--bg3); color: var(--text1); }
+        /* ===== Individual ticket cards (box-office stub design) ===== */
+        @keyframes tkt-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+        .tkt-cards-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 20px; }
+        @media (min-width: 560px) { .tkt-cards-grid { grid-template-columns: 1fr 1fr; } }
+        .tkt-single-card { background: #fff; border-radius: 14px; position: relative; overflow: visible; box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 6px 18px rgba(0,0,0,.10); color: #111; animation: tkt-in .28s ease both; text-align: left; }
+        .tkt-single-card:nth-child(1) { animation-delay: .03s; }
+        .tkt-single-card:nth-child(2) { animation-delay: .06s; }
+        .tkt-single-card:nth-child(3) { animation-delay: .09s; }
+        .tkt-single-card:nth-child(4) { animation-delay: .12s; }
+        .tkt-single-card:nth-child(5) { animation-delay: .15s; }
+        .tkt-single-card:nth-child(6) { animation-delay: .18s; }
+        .tkt-single-card:nth-child(7) { animation-delay: .21s; }
+        .tkt-single-card:nth-child(8) { animation-delay: .24s; }
+        @media (prefers-reduced-motion: reduce) { .tkt-single-card { animation: none; } }
+        .tkt-c-accent { height: 4px; border-radius: 14px 14px 0 0; background: #2DB89C; }
+        .tkt-c-accent.vip { background: #EAB044; }
+        .tkt-c-accent.ride { background: #E0A361; }
+        .tkt-c-accent.exp { background: #9C82E0; }
+        .tkt-c-accent.credit { background: #6BA3E0; }
+        .tkt-c-credit-top { padding: 12px 16px 10px; }
+        .tkt-c-credit-split { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 9px; }
+        .tkt-c-credit-amount { font-family: monospace; font-size: 20px; font-weight: 800; color: #1E4D8C; letter-spacing: -.01em; line-height: 1; }
+        .tkt-c-top { padding: 12px 16px; }
+        .tkt-c-name { font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 700; color: #111; margin-bottom: 10px; line-height: 1.25; letter-spacing: .01em; }
+        .tkt-c-seat-row { display: flex; gap: 16px; margin-bottom: 10px; }
+        .tkt-c-seat-col { display: flex; flex-direction: column; gap: 3px; min-width: 32px; }
+        .tkt-c-seat-lbl { font-family: monospace; font-size: 10px; font-weight: 600; letter-spacing: .08em; color: #767676; text-transform: uppercase; }
+        .tkt-c-seat-val { font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 800; color: #0D1F1C; line-height: 1; letter-spacing: -.01em; }
+        .tkt-c-venue { font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 700; color: #111; margin-bottom: 4px; }
+        .tkt-c-datetime { font-family: monospace; font-size: 10.5px; font-weight: 700; color: #1A6055; letter-spacing: .02em; }
+        .tkt-c-addon-top { padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px; }
+        .tkt-c-addon-icon { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+        .tkt-c-addon-icon.ride { background: #FEF0DE; color: #A86820; }
+        .tkt-c-addon-icon.exp { background: #EEE8F8; color: #5C3DB0; }
+        .tkt-c-addon-name { font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 700; color: #111; line-height: 1.25; margin-bottom: 4px; }
+        .tkt-c-addon-sub { font-family: monospace; font-size: 10px; color: #555; margin-bottom: 5px; }
+        .tkt-c-divider { height: 1px; background: #EFEFEF; margin: 0; }
+        .tkt-c-banner { height: 72px; position: relative; background: radial-gradient(ellipse at 18% 65%, rgba(45,184,156,.40) 0%, transparent 52%), radial-gradient(ellipse at 82% 22%, rgba(107,163,224,.22) 0%, transparent 52%), linear-gradient(135deg, #071F1A 0%, #0E3C32 55%, #185C4E 100%); }
+        .tkt-c-banner::before, .tkt-c-banner::after { content: ''; position: absolute; bottom: -11px; width: 22px; height: 22px; border-radius: 50%; background: var(--bg0); z-index: 3; box-shadow: inset 0 0 0 1px rgba(0,0,0,.07); }
+        .tkt-c-banner::before { left: -11px; }
+        .tkt-c-banner::after { right: -11px; }
+        .tkt-c-bottom { padding: 12px 16px; display: flex; align-items: center; gap: 12px; border-top: 1.5px dashed #D0D0D0; border-radius: 0 0 14px 14px; overflow: hidden; }
+        .tkt-c-qr { width: 64px; height: 64px; flex-shrink: 0; background: #fff; border-radius: 6px; border: 1.5px solid #E4E4E4; display: flex; align-items: center; justify-content: center; }
+        .tkt-c-qr canvas, .tkt-c-qr img, .tkt-c-qr svg { width: 60px !important; height: 60px !important; display: block; }
+        .tkt-c-code-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+        .tkt-c-code { font-family: monospace; font-size: 10px; font-weight: 600; letter-spacing: .07em; color: #555; word-break: break-all; line-height: 1.7; white-space: pre-line; }
+        .tkt-c-pay { display: inline-flex; align-items: center; font-family: monospace; font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #1A6055; background: rgba(45,184,156,.10); border: 1px solid rgba(45,184,156,.25); border-radius: 4px; padding: 2px 6px; width: fit-content; }
+        .toast-container { position: fixed; top: 72px; right: 16px; z-index: 300; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+        .toast { background: var(--bg2); border: 1px solid var(--bg3); border-left: 4px solid var(--teal); padding: 12px 16px; border-radius: 8px; color: var(--text1); font-size: 13px; display: flex; gap: 8px; align-items: center; min-width: 280px; animation: slideInRight 0.3s ease-out; pointer-events: auto; }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: translateX(0); } }
+        .toast.success { border-left-color: var(--green); }
+        .toast.error { border-left-color: var(--red); }
+        .toast.info { border-left-color: var(--teal); }
+        .toast-icon { font-size: 16px; }
+        .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
+        .btn-primary { flex: 1; padding: 12px; background: var(--teal); color: #050E22; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.15s ease-out; }
+        .btn-primary:active { transform: scale(0.95); }
+        .btn-secondary { flex: 1; padding: 12px; background: var(--bg3); color: var(--text1); border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.15s ease-out; }
+        .btn-secondary:active { transform: scale(0.95); }
+        /* ===== Checkout (full-page flow, not a modal) ===== */
+        .checkout-view { position: fixed; inset: 0; z-index: 200; background: var(--bg0); display: none; flex-direction: column; }
+        .checkout-view.show { display: flex; animation: ckSlideIn 0.3s var(--ease-out); }
+        @keyframes ckSlideIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
+        .checkout-bar { position: sticky; top: 0; z-index: 100; flex-shrink: 0; display: block; height: auto; padding: 0; padding-top: env(safe-area-inset-top); background: rgba(7, 20, 40, 0.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--bg3); }
+        .checkout-bar-inner { display: flex; align-items: center; gap: 6px; height: 56px; padding: 0 12px 0 4px; }
+        .checkout-back { width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: none; border: none; color: #EDF2F9; cursor: pointer; border-radius: 8px; touch-action: manipulation; transition: background 0.15s ease-out; }
+        .checkout-back:hover { background: rgba(255,255,255,0.08); }
+        .checkout-back:active { transform: scale(0.92); }
+        .checkout-back svg { width: 22px; height: 22px; }
+        .checkout-bar-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 17px; color: #EDF2F9; }
+        .checkout-step-label { margin-left: auto; font-size: 12px; font-weight: 500; color: #94AED4; font-variant-numeric: tabular-nums; }
+        /* Wizard stepper (numbered, box-office style) */
+        .wiz-bar { flex-shrink: 0; display: flex; align-items: flex-start; width: 100%; max-width: 560px; margin: 0 auto; padding: 14px 16px 6px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .wiz-bar::-webkit-scrollbar { display: none; }
+        .wiz-step { display: flex; flex-direction: column; align-items: center; gap: 5px; flex: 0 0 auto; }
+        .wiz-dot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--bg3); background: var(--bg2); color: var(--text3); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; display: flex; align-items: center; justify-content: center; transition: background 0.2s var(--ease-out), border-color 0.2s var(--ease-out), color 0.2s var(--ease-out); }
+        .wiz-dot svg { width: 14px; height: 14px; }
+        .wiz-label { font-size: 10px; font-weight: 600; letter-spacing: 0.2px; color: var(--text3); white-space: nowrap; transition: color 0.2s ease-out; }
+        .wiz-step.active .wiz-dot { border-color: var(--teal-light); background: var(--teal); color: #050E22; box-shadow: 0 0 0 4px var(--teal-dim); }
+        .wiz-step.active .wiz-label { color: var(--text1); }
+        .wiz-step.done .wiz-dot { border-color: var(--teal); background: var(--teal); color: #050E22; }
+        .wiz-step.done .wiz-label { color: var(--teal-light); }
+        .wiz-line { flex: 1 1 auto; min-width: 14px; height: 2px; margin-top: 13px; background: var(--bg3); border-radius: 1px; transition: background 0.25s ease-out; }
+        .wiz-line.done { background: var(--teal); }
+        .checkout-body { width: 100%; max-width: 560px; margin: 0 auto; padding: 10px 16px 20px; }
+        .field-hint { font-size: 12px; color: var(--text3); margin-bottom: 8px; }
+        .checkout-context { display: flex; align-items: center; gap: 8px; padding: 10px 12px; margin-bottom: 16px; background: var(--bg1); border: 1px solid var(--bg3); border-radius: 10px; font-size: 13px; color: var(--text2); }
+        .checkout-context svg { width: 16px; height: 16px; color: var(--teal-light); flex-shrink: 0; }
+        .checkout-context strong { color: var(--text1); font-weight: 700; }
+        .checkout-context .ck-ctx-sep { color: var(--text4); }
+        .checkout-context .ck-ctx-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .checkout-context .ck-ctx-total { flex-shrink: 0; font-weight: 700; color: var(--teal-light); font-variant-numeric: tabular-nums; }
+        .checkout-footer { flex-shrink: 0; display: flex; gap: 10px; padding: 12px 16px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--bg3); background: var(--bg1); }
+        .checkout-footer .btn-primary, .checkout-footer .btn-secondary { min-height: 48px; max-width: 560px; margin: 0 auto; }
+        /* ===== Order Summary side panel ===== */
+        .checkout-main { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; width: 100%; scrollbar-width: thin; scrollbar-color: var(--bg3) transparent; }
+        .checkout-main::-webkit-scrollbar { width: 10px; height: 10px; }
+        .checkout-main::-webkit-scrollbar-track { background: transparent; }
+        .checkout-main::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 8px; border: 3px solid transparent; background-clip: content-box; }
+        .checkout-main::-webkit-scrollbar-thumb:hover { background: var(--bg4); background-clip: content-box; }
+        .checkout-summary { width: 100%; max-width: 560px; margin: 0 auto; padding: 4px 16px 24px; }
+        #checkoutView[data-step="5"] .checkout-summary { display: none; }
+        .os-card { background: var(--bg2); border: 1px solid var(--bg3); border-radius: 16px; padding: 18px; }
+        .os-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 20px; color: var(--text1); margin: 0 0 14px; }
+        .os-event { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
+        .os-event-name { font-size: 15px; font-weight: 700; color: var(--text1); }
+        .os-event-city { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text3); }
+        .os-event-city svg { width: 13px; height: 13px; color: var(--teal-light); flex-shrink: 0; }
+        .os-section-head { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text3); margin: 14px 0 8px; }
+        .os-section-head.first { margin-top: 0; }
+        .os-empty { font-size: 13px; font-style: italic; color: var(--text3); padding: 2px 0; }
+        .os-seats { display: flex; flex-direction: column; gap: 8px; }
+        .os-seat { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; background: var(--bg0); border: 1px solid var(--bg3); border-radius: 10px; padding: 10px 12px; }
+        .os-seat-main { min-width: 0; }
+        .os-seat-title { font-size: 14px; font-weight: 700; color: var(--text1); line-height: 1.3; }
+        .os-seat-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+        .os-seat-right { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+        .os-seat-price { font-size: 15px; font-weight: 800; color: var(--text1); font-variant-numeric: tabular-nums; }
+        .os-seat-remove { background: none; border: none; padding: 0; font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 600; color: var(--red); cursor: pointer; transition: opacity 0.15s ease-out; }
+        .os-seat-remove:hover { text-decoration: underline; }
+        .os-seat-remove:active { opacity: 0.6; }
+        .os-addon-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--text2); padding: 4px 0; }
+        .os-addon-row .os-addon-v { font-weight: 600; color: var(--text1); font-variant-numeric: tabular-nums; }
+        .os-divider { height: 1px; background: var(--bg3); margin: 14px 0; }
+        .os-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--text2); padding: 5px 0; }
+        .os-line .os-line-v { color: var(--text1); font-weight: 600; font-variant-numeric: tabular-nums; }
+        .os-line.disc, .os-line.disc .os-line-v { color: var(--green-light); }
+        .os-total { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 12px; padding-top: 14px; border-top: 1px solid var(--bg3); }
+        .os-total-label { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 18px; color: var(--text1); }
+        .os-total-value { font-size: 26px; font-weight: 800; color: var(--teal-light); font-variant-numeric: tabular-nums; }
+        .os-cta { display: none; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 50px; margin-top: 16px; background: var(--teal); color: #050E22; border: none; border-radius: 12px; font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s var(--ease-out), transform 0.1s var(--ease-out); }
+        .os-cta:hover { background: var(--teal-light); }
+        .os-cta:active { transform: scale(0.97); }
+        .os-cta svg { flex-shrink: 0; }
+        .os-trust { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 14px; font-size: 11px; color: var(--text3); }
+        .os-trust svg { color: var(--text3); flex-shrink: 0; }
+        @media (min-width: 880px) {
+            .checkout-main { flex-direction: row; gap: 28px; align-items: flex-start; overflow-y: auto; overflow-x: hidden; width: 100%; max-width: 1060px; margin: 0 auto; padding: 0 28px; }
+            .checkout-body { flex: 1; min-width: 0; max-width: none; margin: 0; padding: 16px 0 28px; }
+            .checkout-summary { flex: 0 0 340px; max-width: 340px; margin: 0; padding: 16px 0 28px; position: sticky; top: 0; align-self: flex-start; }
+            .checkout-context { display: none; }
+            .checkout-footer { display: none; }
+            #checkoutView[data-step="5"] .checkout-footer { display: flex; }
+            .os-cta { display: flex; }
+            .wiz-bar { max-width: 1060px; padding-left: 28px; padding-right: 28px; }
+            .checkout-bar-inner { max-width: 1060px; margin: 0 auto; padding-left: 28px; padding-right: 28px; }
+        }
+        /* Checkout — review step */
+        .ck-items { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+        .ck-item { display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--bg2); border: 1px solid var(--bg3); border-radius: 10px; }
+        .ck-item-main { flex: 1; min-width: 0; }
+        .ck-item-name { font-size: 14px; font-weight: 600; color: var(--text1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ck-item-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+        .ck-qty { flex: 0 0 auto; max-width: 104px; }
+        .ck-line { flex: 0 0 auto; font-size: 14px; font-weight: 700; color: var(--teal-light); font-variant-numeric: tabular-nums; min-width: 48px; text-align: right; }
+        .ck-remove { flex: 0 0 auto; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: none; background: var(--bg3); color: var(--text2); border-radius: 8px; cursor: pointer; transition: background 0.15s ease-out, color 0.15s ease-out; }
+        .ck-remove svg { width: 16px; height: 16px; }
+        .ck-remove:hover { background: var(--red); color: #fff; }
+        .ck-empty { padding: 32px 16px; text-align: center; color: var(--text3); font-size: 14px; }
+        /* Checkout — add-ons step */
+        .addon-cat-head { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text3); margin: 18px 0 10px; }
+        .addon-cat-head::after { content: ''; flex: 1; height: 1px; background: var(--bg3); }
+        .addon-cat-head:first-child { margin-top: 0; }
+        .addon-row { display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--bg2); border: 1px solid var(--bg3); border-radius: 10px; margin-bottom: 8px; }
+        .addon-row-main { flex: 1; min-width: 0; }
+        .addon-row-name { font-size: 14px; font-weight: 600; color: var(--text1); }
+        .addon-row-desc { font-size: 12px; color: var(--text3); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .addon-row-price { font-size: 13px; font-weight: 700; color: var(--teal-light); margin-top: 3px; }
+        .addon-add { flex: 0 0 auto; min-height: 40px; padding: 0 16px; border: none; border-radius: 8px; background: var(--teal); color: #050E22; font-weight: 700; font-size: 13px; cursor: pointer; touch-action: manipulation; transition: transform 0.12s var(--spring); }
+        .addon-add:active { transform: scale(0.94); }
+        .addon-qty { flex: 0 0 auto; max-width: 104px; }
+        .addon-mode-toggle { display: flex; background: var(--bg3); border: 1px solid var(--bg3); border-radius: 10px; padding: 3px; gap: 2px; margin: 0 0 16px; }
+        .addon-mode-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; height: 34px; border: none; border-radius: 7px; font-size: 12px; font-weight: 600; letter-spacing: 0.2px; cursor: pointer; background: transparent; color: var(--text3); transition: background 0.15s, color 0.15s, box-shadow 0.15s; white-space: nowrap; touch-action: manipulation; }
+        .addon-mode-btn svg { flex-shrink: 0; opacity: 0.7; }
+        .addon-mode-btn.active { background: var(--bg1); color: var(--text1); box-shadow: 0 1px 3px rgba(0,0,0,0.18); }
+        .addon-mode-btn.active svg { opacity: 1; }
+        .addon-tag { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; flex-shrink: 0; }
+        .addon-tag.ride { background: var(--amber-dim); color: var(--amber-light); border: 1px solid var(--amber-border); }
+        .addon-tag.exp { background: var(--violet-dim); color: var(--violet-light); border: 1px solid var(--violet-border); }
+        .credit-badge { display: inline-flex; align-items: center; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--blue-light); background: var(--blue-dim); border: 1px solid var(--blue-border); border-radius: 4px; padding: 2px 6px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+        /* Checkout — payment step */
+        .pay-methods { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+        .pay-method { display: flex; align-items: center; gap: 12px; padding: 12px; min-height: 44px; background: var(--bg2); border: 2px solid var(--bg3); border-radius: 10px; cursor: pointer; touch-action: manipulation; transition: border-color 0.15s ease-out, background 0.15s ease-out; }
+        .pay-method:hover { border-color: var(--teal-dim); }
+        .pay-method.selected { border-color: var(--teal-light); background: var(--teal-dim); }
+        .pay-method svg { width: 22px; height: 22px; color: var(--text2); flex-shrink: 0; }
+        .pay-method.selected svg { color: var(--teal-light); }
+        .pay-method-label { flex: 1; font-size: 14px; font-weight: 600; color: var(--text1); }
+        .pay-radio { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--text4); flex-shrink: 0; position: relative; transition: border-color 0.15s ease-out; }
+        .pay-method.selected .pay-radio { border-color: var(--teal-light); }
+        .pay-method.selected .pay-radio::after { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--teal-light); }
+        .promo-row { display: flex; gap: 8px; margin-bottom: 18px; }
+        .promo-input { flex: 1; min-width: 0; padding: 12px; min-height: 44px; background: var(--bg2); border: 2px solid var(--bg3); border-radius: 8px; color: var(--text1); font-size: 14px; font-family: 'Outfit', sans-serif; text-transform: uppercase; }
+        .promo-input:focus { outline: none; border-color: var(--teal-light); }
+        .promo-input::placeholder { text-transform: none; color: var(--text3); }
+        .promo-apply { flex: 0 0 auto; padding: 0 18px; min-height: 44px; border: 1px solid var(--bg3); background: var(--bg3); color: var(--text1); border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; touch-action: manipulation; transition: transform 0.12s var(--spring); }
+        .promo-apply:active { transform: scale(0.96); }
+        .summary-discount { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; color: var(--green-light); border-bottom: 1px solid var(--bg3); }
+        .pay-note { font-size: 11px; color: var(--text3); text-align: center; margin-top: 12px; }
+        @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
+        @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
+        .skeleton { background: linear-gradient(90deg, var(--bg3) 0%, var(--bg2) 50%, var(--bg3) 100%); background-size: 1000px 100%; animation: shimmer 2s infinite; }
+        @media (max-width: 374px) { .hero-title { font-size: 24px; } .section-title { font-size: 18px; } .bundle-card { width: 200px; } }
+        @media (min-width: 768px) { .tabs { padding: 0 24px 16px; } .grid { padding: 0 24px 32px; } .bundles-section { padding: 0 24px; } header { padding: 0 24px; } .own-every-spend { margin: 0 24px 24px; } .hero { padding: 24px; } }
+        /* ===== Brand logo ===== */
+        .brand-logo { display: flex; align-items: center; text-decoration: none; }
+        .brand-logo svg { height: 26px; width: auto; display: block; }
+        /* Header is always dark navy in both themes, so the wordmark stays light for contrast */
+        .brand-logo svg path[fill="#3A4B70"], .brand-logo svg path[fill="#263148"] { fill: #EDF2F9; }
+        /* ===== Events view ===== */
+        .events-intro { padding: 20px 16px 4px; }
+        .events-intro h1 { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 700; color: var(--text1); margin-bottom: 4px; letter-spacing: -0.5px; }
+        .events-intro p { font-size: 14px; color: var(--text2); max-width: 420px; }
+        .events-group { padding: 0 16px 8px; margin-bottom: 16px; }
+        .events-group:last-child { padding-bottom: 100px; }
+        .events-group-head { display: flex; align-items: center; gap: 10px; margin: 16px 0 12px; }
+        .events-group-head h2 { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; color: var(--text1); }
+        .live-pulse { width: 9px; height: 9px; border-radius: 50%; background: var(--red); position: relative; flex-shrink: 0; }
+        .live-pulse::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--red); animation: pulse 1.8s ease-out infinite; }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 0.7; } 100% { transform: scale(3); opacity: 0; } }
+        .event-list { display: grid; gap: 12px; }
+        @media (min-width: 768px) { .event-list { grid-template-columns: repeat(2, 1fr); gap: 16px; } .events-intro { padding: 24px; } .events-group { padding: 0 24px 8px; } }
+        @media (min-width: 1024px) { .event-list { grid-template-columns: repeat(3, 1fr); } }
+        .event-card { width: 100%; text-align: left; font: inherit; color: inherit; background: var(--bg2); border: 1px solid var(--bg3); border-radius: 14px; overflow: hidden; cursor: pointer; transition: all 0.2s ease-out; animation: slideUp 0.4s var(--ease-out) both; display: flex; flex-direction: column; }
+        .event-card.is-soon { cursor: default; }
+        .event-card:active { transform: translateY(-4px); }
+        .event-card:focus-visible { outline: 2px solid var(--teal-light); outline-offset: 2px; }
+        .event-banner { height: 112px; position: relative; display: flex; align-items: flex-end; padding: 10px; }
+        .event-banner-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+        .event-banner::after { content: ''; position: absolute; inset: 0; z-index: 1; background: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.12) 55%, rgba(0,0,0,0.18)); }
+        .event-tag { position: absolute; top: 10px; left: 10px; z-index: 2; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #fff; background: rgba(0,0,0,0.35); padding: 3px 8px; border-radius: 6px; backdrop-filter: blur(4px); }
+        .event-status { position: absolute; top: 10px; right: 10px; z-index: 2; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 9px; border-radius: 20px; display: flex; align-items: center; gap: 5px; }
+        .event-status.live { background: var(--red); color: #fff; }
+        .event-status.onsale { background: var(--green); color: #fff; }
+        .event-status.soon { background: rgba(0,0,0,0.45); color: #fff; backdrop-filter: blur(4px); }
+        .event-status .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; }
+        .event-body { padding: 12px; flex: 1; display: flex; flex-direction: column; }
+        .event-date { font-size: 11px; color: var(--teal-light); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .event-name { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; color: var(--text1); margin-bottom: 4px; line-height: 1.25; }
+        .event-venue { font-size: 12px; color: var(--text3); margin-bottom: 14px; flex: 1; display: flex; align-items: center; gap: 5px; }
+        .ev-venue-text { min-width: 0; }
+        .ev-loc { color: var(--teal-light); font-weight: 600; }
+        .ev-loc::before { content: '·'; margin: 0 5px; color: var(--text4); font-weight: 400; }
+        .event-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .event-from { font-size: 12px; color: var(--text2); }
+        .event-from strong { font-size: 16px; color: var(--teal-light); font-weight: 700; }
+        .event-cta { padding: 8px 14px; background: var(--teal); color: #050E22; border: none; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; transition: all 0.15s ease-out; white-space: nowrap; min-height: 36px; }
+        .event-cta:active { transform: scale(0.95); }
+        .event-when { position: absolute; left: 10px; bottom: 10px; z-index: 2; display: flex; flex-direction: column; gap: 1px; }
+        .ew-time { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; color: #fff; line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 1px 4px rgba(0,0,0,0.45); }
+        .ew-day { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: rgba(255,255,255,0.92); }
+        .event-foot .foot-arrow { display: flex; align-items: center; color: var(--text3); }
+        .event-foot .foot-arrow svg { width: 16px; height: 16px; }
+        /* View toggle (list / card) */
+        .events-intro-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+        .view-toggle { display: flex; gap: 2px; flex-shrink: 0; background: var(--bg2); border: 1px solid var(--bg3); border-radius: 10px; padding: 3px; }
+        .view-toggle-btn { width: 46px; height: 40px; display: flex; align-items: center; justify-content: center; border: none; background: transparent; color: var(--text2); border-radius: 7px; cursor: pointer; touch-action: manipulation; transition: background 0.15s ease-out, color 0.15s ease-out; }
+        .view-toggle-btn svg { width: 20px; height: 20px; }
+        .view-toggle-btn:hover:not(.active) { background: var(--bg3); color: var(--text1); }
+        .view-toggle-btn.active { background: var(--teal); color: #050E22; }
+        .view-toggle-btn:focus-visible { outline: 2px solid var(--teal-light); outline-offset: 2px; }
+        /* Function (showtime) list + filter chips */
+        .filter-bar { display: flex; gap: 8px; overflow-x: auto; padding: 2px 16px 14px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .filter-bar::-webkit-scrollbar { display: none; }
+        .filter-chip { flex-shrink: 0; min-height: 44px; padding: 8px 18px; border-radius: 22px; border: 1px solid var(--bg3); background: var(--bg2); color: var(--text2); font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; transition: background 0.15s ease-out, border-color 0.15s ease-out, color 0.15s ease-out, transform 0.1s ease-out; }
+        .filter-chip:hover:not(.active) { background: var(--bg3); border-color: var(--teal-dim); color: var(--text1); }
+        .filter-chip:active { transform: scale(0.96); }
+        .filter-chip.active { background: var(--teal); border-color: var(--teal); color: #050E22; }
+        .filter-chip:focus-visible { outline: 2px solid var(--teal-light); outline-offset: 2px; }
+        /* Search + date filter row */
+        .search-bar { display: flex; gap: 8px; padding: 2px 16px 12px; }
+        .search-field { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 0 12px; min-height: 44px; background: var(--bg2); border: 1px solid var(--bg3); border-radius: 12px; transition: border-color 0.15s ease-out; }
+        .search-field:focus-within { border-color: var(--teal-light); }
+        .search-field svg { width: 18px; height: 18px; color: var(--text2); flex-shrink: 0; }
+        .search-input { flex: 1; min-width: 0; border: none; background: transparent; color: var(--text1); font-family: 'Outfit', sans-serif; font-size: 16px; line-height: 1.2; padding: 0; }
+        .search-input::placeholder { color: var(--text3); }
+        .search-input:focus { outline: none; }
+        .date-field { flex-shrink: 0; display: flex; align-items: center; gap: 6px; padding: 0 8px 0 10px; min-height: 44px; background: var(--bg2); border: 1px solid var(--bg3); border-radius: 12px; transition: border-color 0.15s ease-out; }
+        .date-field:focus-within { border-color: var(--teal-light); }
+        .date-field .cal { width: 17px; height: 17px; color: var(--text2); flex-shrink: 0; }
+        .date-field .chev { width: 15px; height: 15px; color: var(--text2); flex-shrink: 0; pointer-events: none; }
+        .date-select { border: none; background: transparent; color: var(--text1); font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 600; padding: 0; cursor: pointer; -webkit-appearance: none; appearance: none; max-width: 108px; text-overflow: ellipsis; }
+        .date-select:focus { outline: none; }
+        .date-select option { background: var(--bg1); color: var(--text1); }
+        .func-list { display: flex; flex-direction: column; gap: 12px; animation: slideUp 0.4s var(--ease-out) both; }
+        .func-row { display: flex; align-items: stretch; gap: 0; width: 100%; text-align: left; font: inherit; color: inherit; background: var(--bg2); padding: 0; overflow: hidden; cursor: pointer; border: 1px solid var(--bg3); border-radius: 14px; transition: background 0.15s ease-out, border-color 0.15s ease-out; }
+        .func-row:hover { background: var(--bg1); border-color: var(--teal-dim); }
+        .func-row:active { background: var(--bg3); }
+        .func-row:focus-visible { outline: 2px solid var(--teal-light); outline-offset: 2px; }
+        .func-row.is-soon { cursor: default; }
+        .lr-thumb { flex-shrink: 0; width: 92px; align-self: stretch; border-radius: 0; overflow: hidden; display: block; background-size: cover; background-position: center; }
+        .lr-thumb-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .lr-text { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; padding: 12px 12px 12px 14px; }
+        .lr-date { align-self: flex-start; max-width: 100%; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text2); font-variant-numeric: tabular-nums; padding-bottom: 4px; margin-bottom: 5px; border-bottom: 2px solid var(--teal-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .lr-venue { display: flex; align-items: baseline; font-size: 11px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 2px; }
+        .lr-venue-name { color: var(--text3); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .lr-loc { flex-shrink: 0; color: var(--teal-light); white-space: nowrap; }
+        .lr-loc::before { content: '·'; margin: 0 6px; color: var(--text4); }
+        .lr-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; color: var(--text1); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
+        .lr-meta { font-size: 12px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .lr-meta strong { color: var(--teal-light); font-weight: 700; }
+        .lr-cta { flex-shrink: 0; align-self: center; margin-right: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 0 16px; border-radius: 22px; background: var(--teal); color: #050E22; font-size: 12px; font-weight: 700; letter-spacing: 0.3px; white-space: nowrap; }
+        .lr-cta svg { flex-shrink: 0; }
+        .lr-cta.is-soon { background: transparent; border: 1px solid var(--bg3); color: var(--text2); }
+        @media (max-width: 479px) { .lr-cta { padding: 0; width: 44px; } .lr-cta-label { display: none; } }
+        .func-empty { padding: 44px 16px; text-align: center; color: var(--text3); font-size: 14px; }
+        /* ===== Desktop container: unify the landing into one centered shell (matches checkout's 1060px) ===== */
+        @media (min-width: 768px) {
+            .events-intro, .search-bar, .filter-bar, .events-group { max-width: 1060px; margin-left: auto; margin-right: auto; }
+            .search-bar, .filter-bar { padding-left: 24px; padding-right: 24px; }
+        }
+        @media (min-width: 980px) {
+            .func-list { display: grid; grid-template-columns: repeat(2, 1fr); align-items: start; }
+        }
+        /* ===== Detail back bar + dynamic hero ===== */
+        .detail-back { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: none; border: none; color: var(--text2); font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'Outfit', sans-serif; min-height: 44px; }
+        .detail-back:active { color: var(--text1); }
+        .detail-back svg { width: 18px; height: 18px; }
+        #heroCard .hero-date { color: rgba(255,255,255,0.85); }
+        #heroCard .hero-title { color: #fff; }
+        #heroCard .hero-desc { color: rgba(255,255,255,0.92); }
+        /* ===== Seat map (seats.io) ===== */
+        #seatMapWrap { animation: slideUp 0.4s var(--ease-out) both; }
+        .seat-subhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 12px; }
+        .seat-subhead .field-hint { margin: 0; }
+        .seatsio-wrap { position: relative; width: 100%; height: 420px; border-radius: 12px; overflow: hidden; border: 1px solid var(--bg3); background: var(--bg2); }
+        #seatsio-chart { width: 100%; height: 100%; display: block; }
+        #seatsio-overlay { position: absolute; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; background: var(--bg2); border-radius: 12px; transition: opacity 0.3s; }
+        #seatsio-overlay:empty { display: none; }
+        .seatsio-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 10px; color: var(--text3); font-size: 12px; letter-spacing: 0.4px; text-align: center; padding: 20px; }
+        .seatsio-placeholder svg { opacity: 0.4; }
+        .seatsio-placeholder strong { font-size: 12px; color: var(--amber-light); font-weight: 700; background: var(--amber-dim); border: 1px solid var(--amber-border); border-radius: 6px; padding: 4px 12px; letter-spacing: 0.6px; }
+        .selected-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; min-height: 20px; }
+        .seat-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--teal-dim); border: 1px solid rgba(32,153,145,0.5); border-radius: 6px; padding: 3px 9px; font-size: 11px; font-weight: 600; color: var(--teal-light); font-variant-numeric: tabular-nums; }
+        .seat-chip-x { background: none; border: none; cursor: pointer; color: var(--teal-light); font-size: 15px; line-height: 1; padding: 0 0 0 2px; opacity: 0.7; }
+        .seat-chip-x:hover { opacity: 1; }
+        .seat-counter { font-size: 11px; font-weight: 600; color: var(--text3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .seat-counter.ok { color: var(--teal-light); }
+        .seat-counter.warn { color: var(--amber-light); }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .seat-summary { margin: 14px 0 4px; padding: 12px 14px; background: var(--bg2); border: 1px solid var(--bg3); border-radius: 10px; min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--text1); }
+        .seat-hint { color: var(--text3); font-size: 12px; }
+        .seat-sum-total { font-weight: 700; color: var(--teal-light); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    </style>
+    <script src="https://cdn-na.seatsio.net/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+    <header><a class="brand-logo" href="#" onclick="backToEvents();return false;" aria-label="Evinra — home"><svg viewBox="0 0 3211 797" fill="none" xmlns="http://www.w3.org/2000/svg" role="img"><path fill-rule="evenodd" clip-rule="evenodd" d="M732.671 409.158C721.393 296.283 704.913 201.451 617.689 144.998C564.238 110.403 503.251 97.9116 440.188 100.153C377.114 102.394 317.176 119.183 266.316 157.49C125.878 263.24 131.44 536.847 270.871 641.107C357.765 706.072 482.772 713.033 580.318 670.161C637.048 645.24 723.665 625.603 785.546 629.695C760.841 667.457 729.587 699.41 692.37 725.668C625.05 773.166 546.442 793.06 464.914 795.959C409.129 797.933 353.437 791.507 300.572 773.135C252.827 756.542 209.411 731.6 172.358 697.087C135.306 662.573 107.341 621.038 87.4066 574.589C65.3334 523.153 54.9599 468.068 52.9756 412.283C50.9914 356.499 57.4376 300.817 75.7994 247.942C92.3826 200.197 117.335 156.78 151.848 119.728C186.361 82.6752 227.896 54.7109 274.346 34.7761C325.781 12.6926 380.867 2.32937 436.651 0.345143C492.436 -1.63908 548.118 4.7968 600.993 23.1689C648.737 39.7521 692.154 64.704 729.207 99.2173C766.249 133.72 794.223 175.276 814.158 221.715C856.269 319.847 838.73 440.515 818.98 540.281C593.2 484.014 492.868 618.571 223.558 523.451C478.7 548.578 610.646 397.304 732.692 409.147L732.671 409.158Z" fill="#3A4B70"/><path fill-rule="evenodd" clip-rule="evenodd" d="M33.835 211.17C33.835 211.17 37.7109 275.858 124.719 311.595C147.954 321.136 177.121 328.62 213.721 332.26C426.702 353.418 513.566 172.339 725.436 159.447C798.133 155.026 859.562 164.505 884.421 207.706C908.365 249.323 918.204 335.93 905.281 395.066C857.269 331.077 800.806 313.949 738.452 321.547C604.994 337.801 444.529 467.259 282.028 492.633C226.326 501.33 166.131 500.169 116.165 483.637C93.4646 476.132 72.8616 465.439 55.754 451.077C-4.06066 400.834 -22.3608 308.058 33.8144 211.16L33.835 211.17Z" fill="#209991"/><path fill-rule="evenodd" clip-rule="evenodd" d="M85.5345 222.721C75.2947 211.083 43.5059 199.177 33.8418 211.155C33.8418 211.155 34.6643 242.347 67.5223 274.928C71.7889 256.843 78.7697 239.972 85.5345 222.731V222.721Z" fill="#12615C"/><path fill-rule="evenodd" clip-rule="evenodd" d="M836.02 430.063C855.266 424.048 903.576 415.155 905.303 395.077C904.295 365.94 840.173 337.421 839.536 337.616C841.057 370.063 838.23 398.007 836.02 430.063Z" fill="#12615C"/><path fill-rule="evenodd" clip-rule="evenodd" d="M729.98 383.792C804.713 361.945 838.27 398.35 838.27 398.35C839.257 384.687 839.668 350.554 839.247 336.963C814.408 318.847 759.826 316.493 721.488 324.183C723.462 338.751 729.631 380.934 729.98 383.792Z" fill="#263148"/><path d="M1421.41 382.602C1405.16 324.165 1357.22 290.421 1293.84 290.421C1230.46 290.421 1182.52 324.165 1166.27 382.602H1421.41ZM1162.21 460.791C1173.58 529.927 1224.77 570.256 1293.84 570.256C1339.34 570.256 1377.53 552.972 1401.09 520.873H1492.91C1462.03 599.886 1389.72 648.445 1293.84 648.445C1165.46 648.445 1078.51 560.379 1078.51 430.338C1078.51 300.297 1165.46 212.231 1293.84 212.231C1422.22 212.231 1509.16 300.297 1509.16 430.338C1509.16 441.038 1508.35 450.914 1507.54 460.791H1162.21Z" fill="#3A4B70"/><path d="M1664.39 636.1L1501.07 224.577H1588.82L1713.14 541.449L1835.02 224.577H1922.78L1759.45 636.1H1664.39Z" fill="#3A4B70"/><path d="M1948.42 97.005C1948.42 68.1984 1968.73 48.4453 1997.98 48.4453C2027.23 48.4453 2047.55 68.1984 2047.55 97.005C2047.55 126.635 2027.23 147.211 1997.98 147.211C1968.73 147.211 1948.42 126.635 1948.42 97.005ZM1954.92 636.1V224.577H2040.23V636.1H1954.92Z" fill="#3A4B70"/><path d="M2186.14 430.338V636.1H2100.82V224.577H2186.14V274.783C2216.2 236.923 2260.89 212.231 2322.65 212.231C2433.97 212.231 2503.03 293.713 2503.03 403.178V636.1H2417.71V401.532C2417.71 334.042 2383.59 290.421 2315.33 290.421C2240.58 290.421 2186.14 342.272 2186.14 430.338Z" fill="#3A4B70"/><path d="M2644.88 636.1H2559.56V224.577H2644.88V255.03C2679 216.347 2728.57 201.532 2791.95 217.993L2777.32 292.067C2684.69 276.429 2644.88 330.75 2644.88 430.338V636.1Z" fill="#3A4B70"/><path d="M3125.2 636.1V590.009C3094.32 625.4 3048.01 648.445 2985.44 648.445C2862.75 648.445 2775.8 560.379 2775.8 430.338C2775.8 300.297 2862.75 212.231 2985.44 212.231C3048.01 212.231 3094.32 235.277 3125.2 270.668V224.577H3210.51V636.1H3125.2ZM2857.06 430.338C2857.06 518.404 2912.31 570.256 2991.13 570.256C3070.76 570.256 3125.2 518.404 3125.2 430.338C3125.2 342.272 3070.76 290.421 2991.13 290.421C2912.31 290.421 2857.06 342.272 2857.06 430.338Z" fill="#3A4B70"/></svg></a><button class="theme-toggle" id="themeToggle" aria-label="Switch to light theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg></button></header>
+    <main>
+      <div id="eventsView">
+        <section class="events-intro"><div class="events-intro-head"><h1>Pick a Showtime</h1><div class="view-toggle" role="group" aria-label="Choose layout"><button class="view-toggle-btn active" id="viewList" aria-label="List view" aria-pressed="true" onclick="setView('list')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button><button class="view-toggle-btn" id="viewCard" aria-label="Card view" aria-pressed="false" onclick="setView('card')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></button></div></div><p>Choose a function, select your seats, then add parking, food &amp; more — everything visitors spend, before and during the event.</p></section>
+        <div class="search-bar">
+          <div class="search-field">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input class="search-input" id="searchInput" type="search" inputmode="search" enterkeyhint="search" autocomplete="off" placeholder="Search events or venues" aria-label="Search showtimes" oninput="onSearchInput(this.value)">
+          </div>
+          <div class="date-field">
+            <svg class="cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <select class="date-select" id="dateFilter" aria-label="Filter by date" onchange="setDate(this.value)"></select>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="filter-bar" id="filterBar" role="tablist" aria-label="Filter showtimes by category"></div>
+        <section class="events-group"><div class="func-list" id="funcList"></div><div class="event-list" id="funcGrid" style="display:none"></div><div class="func-empty" id="funcEmpty" style="display:none">No showtimes match your search.</div></section>
+      </div>
+      <div id="eventDetailView" style="display:none">
+        <button class="detail-back" onclick="backToEvents()" aria-label="Back to all events"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>All events</button>
+        <section class="hero"><div class="hero-card" id="heroCard"><div class="hero-date" id="heroDate">December 19-22</div><h1 class="hero-title" id="heroTitle">Winter Fest 2024</h1><p class="hero-desc" id="heroDesc">Experience the ultimate holiday celebration</p><button class="hero-cta" onclick="document.querySelector('.tabs .tab').click()">Browse Tickets</button></div></section>
+        <section class="own-every-spend"><div class="own-title">Own Every Spend</div><div class="category-dots"><div class="dot-label"><div class="dot tickets"></div><span>Tickets</span></div><div class="dot-label"><div class="dot parking"></div><span>Parking</span></div><div class="dot-label"><div class="dot food"></div><span>Food</span></div><div class="dot-label"><div class="dot experiences"></div><span>Exper.</span></div><div class="dot-label"><div class="dot merch"></div><span>Merch</span></div></div></section>
+        <div class="tabs" role="tablist"><button class="tab active" onclick="switchCategory('tickets')">Tickets</button><button class="tab" onclick="switchCategory('parking')">Parking</button><button class="tab" onclick="switchCategory('food')">Food</button><button class="tab" onclick="switchCategory('experiences')">Experiences</button><button class="tab" onclick="switchCategory('merch')">Merch</button></div>
+        <div class="grid" id="productGrid"></div>
+        <section class="bundles-section"><h2 class="section-title">Bundle &amp; Save</h2><div class="bundles-carousel" id="bundlesCarousel"></div></section>
+      </div>
+    </main>
+    <div class="cart-bar" id="cartBar"><div class="cart-info"><div class="cart-count" id="cartCount">0 items</div><div class="cart-total" id="cartTotal">$0</div></div><button class="cart-checkout" onclick="openCheckout()">Checkout</button></div>
+    <nav class="bottom-nav"><button class="nav-item active" onclick="switchNav('explore')"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span><span>Explore</span></button><button class="nav-item" onclick="switchNav('visit')"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><span>My Visit</span><div class="nav-badge" id="visitBadge" style="display:none;">0</div></button><button class="nav-item" onclick="switchNav('orders')"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></span><span>Orders</span></button><button class="nav-item" onclick="switchNav('account')"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span>Account</span></button></nav>
+    <div class="checkout-view" id="checkoutView" role="dialog" aria-label="Checkout" aria-modal="true">
+      <header class="checkout-bar">
+        <div class="checkout-bar-inner">
+          <button class="checkout-back" onclick="checkoutBack()" aria-label="Go back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button>
+          <span class="checkout-bar-title">Buy Tickets</span>
+          <span class="checkout-step-label" id="checkoutStepLabel" aria-live="polite">Step 1 of 2</span>
+        </div>
+      </header>
+      <div class="wiz-bar" id="wizBar" aria-hidden="true"></div>
+      <div class="checkout-main">
+      <div class="checkout-body">
+        <div class="checkout-context" id="checkoutContext"></div>
+        <div class="step active" id="step1">
+          <h3 class="step-title">Select Seats</h3>
+          <div class="seat-subhead">
+            <span class="field-hint">Tap seats on the map — colors show price tiers.</span>
+            <span class="seat-counter" id="seatCounter" aria-live="polite"></span>
+          </div>
+          <div id="seatMapWrap">
+            <div class="seatsio-wrap" id="seatsioWrap">
+              <div id="seatsio-overlay"></div>
+              <div id="seatsio-chart" role="group" aria-label="Interactive seat map"></div>
+            </div>
+          </div>
+        </div>
+        <div class="step" id="step2">
+          <h3 class="step-title">Add-Ons</h3>
+          <p class="field-hint">Optional — parking, food &amp; extras for your visit.</p>
+          <div id="addonList"></div>
+        </div>
+        <div class="step" id="step3">
+          <h3 class="step-title">Customer Information</h3>
+          <p class="field-hint">We'll send your tickets and receipt to this email.</p>
+          <form id="buyerForm" onsubmit="goStep(4); return false;">
+            <div class="form-group"><label class="form-label" for="firstName">First Name *</label><input class="form-input" type="text" id="firstName" placeholder="John" autocomplete="given-name" required></div>
+            <div class="form-group"><label class="form-label" for="lastName">Last Name *</label><input class="form-input" type="text" id="lastName" placeholder="Doe" autocomplete="family-name" required></div>
+            <div class="form-group"><label class="form-label" for="email">Email *</label><input class="form-input" type="email" id="email" placeholder="john@example.com" autocomplete="email" required></div>
+            <div class="form-group"><label class="form-label" for="phone">Phone *</label><input class="form-input" type="tel" id="phone" placeholder="+1 (555) 000-0000" autocomplete="tel" required></div>
+            <button type="submit" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;" aria-hidden="true" tabindex="-1">Submit</button>
+          </form>
+        </div>
+        <div class="step" id="step4">
+          <h3 class="step-title">Payment Method</h3>
+          <div class="pay-methods" id="payMethods"></div>
+          <h4 class="panel-section-title">Promo Code</h4>
+          <div class="promo-row">
+            <input class="promo-input" id="promoInput" type="text" placeholder="Enter code" autocomplete="off" aria-label="Promo code">
+            <button class="promo-apply" type="button" onclick="applyPromo()">Apply</button>
+          </div>
+          <p class="pay-note">Demo checkout — no real payment is collected.</p>
+        </div>
+        <div class="step" id="step5">
+          <div class="confirmation-content"><div class="success-checkmark">✓</div><p class="confirmation-message">Order Confirmed!</p><p class="order-number" id="orderNumber"></p></div>
+          <div class="tkt-cards-grid" id="ticketGrid"></div>
+          <div class="wallet-actions"><button class="wallet-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Add to Wallet</button><button class="wallet-btn secondary"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download</button></div>
+        </div>
+      </div>
+      <aside class="checkout-summary" id="checkoutSummary" aria-label="Order summary"><div class="os-card" id="orderSummaryCard"></div></aside>
+      </div>
+      <div class="checkout-footer" id="checkoutFooter"></div>
+    </div>
+    <div class="toast-container" id="toastContainer"></div>
+    <script>const state = { cart: new Map(), category: 'tickets', step: 1, selectedDate: null, selectedTime: null, buyer: {}, event: null, func: null };
+        const PRODUCTS = { tickets: [{ id: 't1', name: 'General Admission', desc: 'Park entry & unlimited rides', price: 24, per: 'per person', popular: true, max: 20 }, { id: 't2', name: 'VIP Fast Pass', desc: 'Skip lines + lounge access', price: 49, per: 'per person', max: 10 }, { id: 't3', name: 'Family Bundle', desc: '4 tickets + parking', price: 79, per: 'per family', max: 5 }], parking: [{ id: 'p1', name: 'Standard Parking', desc: 'Surface lot parking', price: 10, per: 'per car', popular: true, max: 50 }, { id: 'p2', name: 'Premium Parking', desc: 'Close to entrance', price: 20, per: 'per car', max: 20 }, { id: 'p3', name: 'Valet Parking', desc: 'Full valet service', price: 35, per: 'per car', max: 10 }], food: [{ id: 'f1', name: 'Meal Voucher', desc: '$30 food credit', price: 25, per: 'per voucher', popular: true, max: 100 }, { id: 'f2', name: 'Beverage Package', desc: '4 drink tickets', price: 18, per: 'per package', max: 50 }, { id: 'f3', name: 'Gourmet Dining', desc: 'Premium meal experience', price: 55, per: 'per person', max: 30 }], experiences: [{ id: 'e1', name: 'Meet & Greet', desc: 'Exclusive artist meet', price: 75, per: 'per person', popular: true, max: 15 }, { id: 'e2', name: 'VIP Lounge', desc: 'All-day lounge access', price: 45, per: 'per person', max: 25 }, { id: 'e3', name: 'Photo Package', desc: 'Professional photos', price: 60, per: 'per person', max: 20 }], merch: [{ id: 'm1', name: 'Event T-Shirt', desc: 'Official commemorative tee', price: 24, per: 'per shirt', popular: true, max: 100 }, { id: 'm2', name: 'Merchandise Bundle', desc: 'Shirt + hat + pins', price: 45, per: 'per bundle', max: 50 }, { id: 'm3', name: 'Premium Hoodie', desc: 'Limited edition hoodie', price: 65, per: 'per hoodie', max: 30 }] };
+        const BUNDLES = [{ name: 'The Classic', items: '2 GA + 1 Parking', orig: 58, price: 48, save: 10 }, { name: 'Family Day', items: '4 GA + 2 Parking + Meals', orig: 136, price: 99, save: 37 }, { name: 'VIP All-In', items: '2 VIP + Meet & Greet + Merch', orig: 213, price: 159, save: 54 }];
+        const EVENTS = [
+            { id: 'ev1', name: 'Winter Fest 2026', venue: 'Central Park Arena', city: 'New York, NY', status: 'live', from: 24, tag: 'Festival', gradient: 'linear-gradient(135deg,#3B82F6,#1E3A8A)', img: 'https://loremflickr.com/200/200/festival?lock=21', functions: [{ day: 'Dec 19', time: '1:00 PM' }, { day: 'Dec 19', time: '3:00 PM' }, { day: 'Dec 19', time: '5:00 PM' }] },
+            { id: 'ev2', name: 'Holiday Night Market', venue: 'Riverside Plaza', city: 'Chicago, IL', status: 'live', from: 0, tag: 'Market', gradient: 'linear-gradient(135deg,#EC4899,#9D174D)', img: 'https://loremflickr.com/200/200/market?lock=32', functions: [{ day: 'Dec 20', time: '6:00 PM' }, { day: 'Dec 21', time: '6:00 PM' }] },
+            { id: 'ev3', name: "New Year's Eve Gala", venue: 'Skyline Rooftop', city: 'Los Angeles, CA', status: 'onsale', from: 60, tag: 'Nightlife', gradient: 'linear-gradient(135deg,#8B5CF6,#5B21B6)', img: 'https://loremflickr.com/200/200/party?lock=43', functions: [{ day: 'Dec 31', time: '9:00 PM' }] },
+            { id: 'ev4', name: 'Spring Music Festival', venue: 'Greenfield Park', city: 'Austin, TX', status: 'onsale', from: 45, tag: 'Concert', gradient: 'linear-gradient(135deg,#10B981,#065F46)', img: 'https://loremflickr.com/200/200/concert?lock=54', functions: [{ day: 'Mar 14', time: '7:00 PM' }, { day: 'Mar 15', time: '7:00 PM' }] },
+            { id: 'ev5', name: 'Summer Food & Wine', venue: 'Harbor District', city: 'San Francisco, CA', status: 'soon', from: 35, tag: 'Culinary', gradient: 'linear-gradient(135deg,#F59E0B,#B45309)', img: 'https://loremflickr.com/200/200/food?lock=65', functions: [{ day: 'Jun 7', time: '12:00 PM' }] },
+            { id: 'ev6', name: 'Tech & Innovation Expo', venue: 'Convention Center', city: 'Seattle, WA', status: 'soon', from: 75, tag: 'Conference', gradient: 'linear-gradient(135deg,#06B6D4,#0E7490)', img: 'https://loremflickr.com/200/200/technology?lock=76', functions: [{ day: 'Aug 22', time: '10:00 AM' }] }
+        ];
+        const FUNCTIONS = [];
+        EVENTS.forEach(e => (e.functions || []).forEach((fn, i) => FUNCTIONS.push({ id: e.id + '-f' + i, eventId: e.id, event: e, day: fn.day, time: fn.time })));
+        const PIN = "<svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'/><circle cx='12' cy='10' r='3'/></svg>";
+        const CLOCK = "<svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='9'/><path d='M12 7v5l3 2'/></svg>";
+        const ICON_SUN = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><circle cx='12' cy='12' r='4'/><path d='M12 2v2'/><path d='M12 20v2'/><path d='m4.93 4.93 1.41 1.41'/><path d='m17.66 17.66 1.41 1.41'/><path d='M2 12h2'/><path d='M20 12h2'/><path d='m6.34 17.66-1.41 1.41'/><path d='m19.07 4.93-1.41 1.41'/></svg>";
+        const ICON_MOON = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z'/></svg>";
+        const ICON_CHECK = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><polyline points='20 6 9 17 4 12'/></svg>";
+        const ICON_X = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M18 6 6 18'/><path d='m6 6 12 12'/></svg>";
+        const ICON_CARD = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><rect x='2' y='5' width='20' height='14' rx='2'/><path d='M2 10h20'/></svg>";
+        const ICON_PHONE = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><rect x='5' y='2' width='14' height='20' rx='2'/><path d='M12 18h.01'/></svg>";
+        const ICON_WALLET = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2'/><path d='M21 12a2 2 0 0 0-2-2h-3a2 2 0 0 0 0 4h3a2 2 0 0 0 2-2Z'/></svg>";
+        const ICON_TICKET = "<svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z'/><path d='M13 5v14'/></svg>";
+        const ICON_LOCK = "<svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='11' width='18' height='11' rx='2' ry='2'/><path d='M7 11V7a5 5 0 0 1 10 0v4'/></svg>";
+        const ICON_ARROW = "<svg width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12h14'/><path d='M12 5l7 7-7 7'/></svg>";
+        const WIZ_STEPS = [{ label: 'Seats' }, { label: 'Add-ons' }, { label: 'Details' }, { label: 'Pay' }, { label: 'Done' }];
+        const WIZ_TOTAL = WIZ_STEPS.length;
+        const PAY_METHODS = [{ id: 'card', label: 'Credit / Debit Card', icon: ICON_CARD }, { id: 'apple', label: 'Apple Pay', icon: ICON_PHONE }, { id: 'wallet', label: 'Digital Wallet', icon: ICON_WALLET }];
+        const PROMOS = { EVINRA10: 0.10, SAVE10: 0.10 };
+        // ===== seats.io seat map (same chart as the box office) =====
+        const SEATSIO_PUBLIC_KEY = 'c39762f1-8418-43a3-a5b7-55d92f6a4c13';
+        const SEATSIO_CHART_KEY = 'f91ffcd4-0f31-7c67-5d90-cdf785116385';
+        const SEATSIO_REGION = 'na';
+        // Category label → seat price (the chart carries no pricing, so we map it here)
+        const SEAT_PRICES = { 'VIP Admission': 120, 'VIP': 120, 'Premium Admission': 75, 'General Admission': 45, 'ADA Wheerchair Accesible': 45, 'ADA Accesible Seat': 45 };
+        const SEAT_PRICE_DEFAULT = 45;
+        let seatsioChart = null;
+        let selectedSeats = new Set();
+        let seatLabelToCategory = {};
+        function seatPriceFor(cat) { return SEAT_PRICES[cat] != null ? SEAT_PRICES[cat] : SEAT_PRICE_DEFAULT; }
+        function setSeatOverlay(html) { const o = document.getElementById('seatsio-overlay'); if (o) o.innerHTML = html; }
+        function clearSeatOverlay() { const o = document.getElementById('seatsio-overlay'); if (o) o.innerHTML = ''; }
+        function seatLoadingOverlay() { setSeatOverlay('<div class="seatsio-placeholder"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5;animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><span>Loading seat map…</span></div>'); }
+        function seatErrorOverlay(msg) { setSeatOverlay('<div class="seatsio-placeholder"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--red);opacity:.7"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><strong>SEAT MAP UNAVAILABLE</strong><span style="color:var(--text2);max-width:300px">' + msg + '</span></div>'); }
+        function initSeatsio() {
+            if (seatsioChart) return; // already built for this checkout session
+            if (typeof seatsio === 'undefined' || !seatsio.SeatingChart) { seatErrorOverlay('Seat map library failed to load. Check your connection and try again.'); return; }
+            seatLoadingOverlay();
+            try {
+                seatsioChart = new seatsio.SeatingChart({
+                    divId: 'seatsio-chart',
+                    workspaceKey: SEATSIO_PUBLIC_KEY,
+                    chart: SEATSIO_CHART_KEY,
+                    mode: 'normal',
+                    region: SEATSIO_REGION,
+                    colorScheme: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark',
+                    colors: { colorSelected: '#2DB8AE', colorTitle: '#2DB8AE' },
+                    onObjectSelected: function (obj) { seatSelected(obj); },
+                    onObjectDeselected: function (obj) { seatDeselected(obj); },
+                    onChartRenderingFailed: function () { seatErrorOverlay('Seat map could not be rendered. Please try again.'); },
+                    onChartRendered: function () { clearSeatOverlay(); }
+                }).render();
+            } catch (e) { console.error('[seatsio] init error:', e); seatErrorOverlay('Seat map error: ' + e.message); }
+        }
+        function seatSelected(obj) {
+            const cat = (obj.category && obj.category.label) ? obj.category.label : '';
+            const L = obj.labels || {};
+            selectedSeats.add(obj.label);
+            seatLabelToCategory[obj.label] = cat;
+            state.cart.set('seat-' + obj.label, { name: 'Seat ' + obj.label + (cat ? ' · ' + cat : ''), price: seatPriceFor(cat), qty: 1, max: 1, seat: true, label: obj.label, section: L.section || '', row: L.parent || '', seatNo: L.own || '', category: cat });
+            renderSeatChips(); updateSeatCounter(); updateSeatSummary(); updateUI();
+        }
+        function seatDeselected(obj) {
+            selectedSeats.delete(obj.label);
+            delete seatLabelToCategory[obj.label];
+            state.cart.delete('seat-' + obj.label);
+            renderSeatChips(); updateSeatCounter(); updateSeatSummary(); updateUI();
+        }
+        function removeSeat(label) {
+            if (seatsioChart) { seatsioChart.deselectObjects([label]); return; } // fires onObjectDeselected
+            selectedSeats.delete(label); delete seatLabelToCategory[label]; state.cart.delete('seat-' + label);
+            renderSeatChips(); updateSeatCounter(); updateSeatSummary(); updateUI();
+        }
+        function renderSeatChips() {
+            const c = document.getElementById('selectedChips'); if (!c) return;
+            c.innerHTML = [...selectedSeats].sort().map(id => `<span class="seat-chip">${id}<button class="seat-chip-x" aria-label="Remove seat ${id}" onclick="removeSeat('${id}')">×</button></span>`).join('');
+        }
+        function updateSeatCounter() {
+            const el = document.getElementById('seatCounter'); if (!el) return;
+            const n = selectedSeats.size;
+            el.textContent = n ? `${n} seat${n > 1 ? 's' : ''} selected` : '';
+            el.className = 'seat-counter' + (n ? ' ok' : '');
+        }
+        function updateSeatSummary() {
+            const el = document.getElementById('seatSummary'); if (!el) return;
+            const seats = [...selectedSeats].sort();
+            if (!seats.length) { el.innerHTML = `<span class="seat-hint">Tap a seat on the map to select it.</span>`; return; }
+            const subtotal = seats.reduce((s, id) => s + seatPriceFor(seatLabelToCategory[id]), 0);
+            el.innerHTML = `<div><strong>${seats.length}</strong> seat${seats.length > 1 ? 's' : ''}: ${seats.join(', ')}</div><div class="seat-sum-total">$${subtotal}</div>`;
+        }
+        function resetSeatSelection() {
+            if (seatsioChart) { try { seatsioChart.destroy(); } catch (e) { } seatsioChart = null; }
+            selectedSeats = new Set(); seatLabelToCategory = {};
+            const c = document.getElementById('selectedChips'); if (c) c.innerHTML = '';
+            updateSeatCounter(); updateSeatSummary();
+        }
+        function statusLabel(s) { return s === 'live' ? '<span class="live-dot"></span>Live Now' : s === 'onsale' ? 'On Sale' : 'Coming Soon'; }
+        let activeFilter = 'all';
+        let viewMode = 'list';
+        let searchQuery = '';
+        let dateFilter = 'all';
+        let searchDebounce;
+        const STATUS_ORDER = { live: 0, onsale: 1, soon: 2 };
+        function functionRow(f) {
+            const e = f.event, soon = e.status === 'soon';
+            const action = soon ? `notifyFunction('${e.id}')` : `openFunction('${f.id}')`;
+            const meta = soon ? `Coming soon · ${e.tag}` : (e.from ? `From <strong>$${e.from}</strong> · ${e.tag}` : `<strong>Free</strong> · ${e.tag}`);
+            const ctaLabel = soon ? 'Notify Me' : 'Buy Tickets';
+            const ctaIcon = soon
+                ? `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`
+                : `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>`;
+            return `<button class="func-row${soon ? ' is-soon' : ''}" aria-label="${e.name}, ${f.day} ${f.time}, ${e.venue}, ${ctaLabel}" onclick="${action}"><span class="lr-thumb" style="background:${e.gradient}"><img class="lr-thumb-img" src="${e.img}" alt="" width="56" height="72" loading="lazy" onerror="this.remove()"></span><span class="lr-text"><span class="lr-date">${f.day} · ${f.time}</span><span class="lr-venue"><span class="lr-venue-name">${e.venue}</span><span class="lr-loc">${e.city}</span></span><span class="lr-title">${e.name}</span><span class="lr-meta">${meta}</span></span><span class="lr-cta${soon ? ' is-soon' : ''}">${ctaIcon}<span class="lr-cta-label">${ctaLabel}</span></span></button>`;
+        }
+        function functionCard(f) {
+            const e = f.event, soon = e.status === 'soon';
+            const action = soon ? `notifyFunction('${e.id}')` : `openFunction('${f.id}')`;
+            const status = e.status === 'live' ? '<span class="live-dot"></span>Live' : e.status === 'onsale' ? 'On Sale' : 'Soon';
+            const price = soon ? 'Notify Me' : (e.from ? `from <strong>$${e.from}</strong>` : '<strong>Free</strong>');
+            const arrow = soon ? '' : `<span class="foot-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></span>`;
+            return `<button class="event-card${soon ? ' is-soon' : ''}" aria-label="${e.name}, ${f.day} ${f.time}, ${e.venue}" onclick="${action}"><span class="event-banner" style="background:${e.gradient}"><img class="event-banner-img" src="${e.img}" alt="" loading="lazy" onerror="this.remove()"><span class="event-tag">${e.tag}</span><span class="event-status ${e.status}">${status}</span><span class="event-when"><span class="ew-time">${f.time}</span><span class="ew-day">${f.day}</span></span></span><span class="event-body"><span class="event-name">${e.name}</span><span class="event-venue">${PIN}<span class="ev-venue-text">${e.venue}<span class="ev-loc">${e.city}</span></span></span><span class="event-foot"><span class="event-from">${price}</span>${arrow}</span></span></button>`;
+        }
+        function renderFilters() {
+            const tags = ['all', ...new Set(EVENTS.map(e => e.tag))];
+            document.getElementById('filterBar').innerHTML = tags.map(t => `<button class="filter-chip${activeFilter === t ? ' active' : ''}" role="tab" aria-selected="${activeFilter === t}" onclick="setFilter('${t}')">${t === 'all' ? 'All' : t}</button>`).join('');
+        }
+        function setFilter(t) { activeFilter = t; renderFilters(); renderFunctions(); }
+        function renderDateOptions() {
+            const days = [...new Set(FUNCTIONS.map(f => f.day))];
+            document.getElementById('dateFilter').innerHTML = `<option value="all">All dates</option>` + days.map(d => `<option value="${d}">${d}</option>`).join('');
+        }
+        function onSearchInput(v) { searchQuery = v.trim().toLowerCase(); clearTimeout(searchDebounce); searchDebounce = setTimeout(renderFunctions, 120); }
+        function setDate(v) { dateFilter = v; renderFunctions(); }
+        function setView(mode) {
+            viewMode = mode;
+            localStorage.setItem('evinra-view', mode);
+            const lb = document.getElementById('viewList'), cb = document.getElementById('viewCard');
+            lb.classList.toggle('active', mode === 'list'); lb.setAttribute('aria-pressed', mode === 'list');
+            cb.classList.toggle('active', mode === 'card'); cb.setAttribute('aria-pressed', mode === 'card');
+            renderFunctions();
+        }
+        function renderFunctions() {
+            let list = FUNCTIONS.slice().sort((a, b) => STATUS_ORDER[a.event.status] - STATUS_ORDER[b.event.status]);
+            if (activeFilter !== 'all') list = list.filter(f => f.event.tag === activeFilter);
+            if (dateFilter !== 'all') list = list.filter(f => f.day === dateFilter);
+            if (searchQuery) list = list.filter(f => `${f.event.name} ${f.event.venue} ${f.event.city} ${f.event.tag}`.toLowerCase().includes(searchQuery));
+            const listEl = document.getElementById('funcList'), gridEl = document.getElementById('funcGrid'), empty = document.getElementById('funcEmpty');
+            const has = list.length > 0;
+            if (viewMode === 'card') {
+                gridEl.innerHTML = list.map(functionCard).join('');
+                gridEl.style.display = has ? '' : 'none';
+                listEl.style.display = 'none';
+            } else {
+                listEl.innerHTML = list.map(functionRow).join('');
+                listEl.style.display = has ? '' : 'none';
+                gridEl.style.display = 'none';
+            }
+            empty.style.display = has ? 'none' : 'block';
+        }
+        function openFunction(funcId) { const f = FUNCTIONS.find(x => x.id === funcId); if (!f) return; const ev = f.event; state.event = ev; state.func = f; state.selectedDate = f.day; state.selectedTime = f.time; state.category = 'tickets'; state.cart.clear(); updateUI(); openCheckout(); }
+        function notifyFunction(eventId) { const ev = EVENTS.find(e => e.id === eventId); showToast(`We'll notify you when ${ev ? ev.name : 'this event'} goes on sale`, 'info'); }
+        function backToEvents() { closeCheckout(); document.getElementById('eventDetailView').style.display = 'none'; document.getElementById('eventsView').style.display = 'block'; window.scrollTo({ top: 0 }); }
+        function renderProducts() {
+            const grid = document.getElementById('productGrid');
+            const seatWrap = document.getElementById('seatMapWrap');
+            if (state.category === 'tickets') { seatWrap.style.display = 'block'; grid.style.display = 'none'; renderSeatMap(); return; }
+            seatWrap.style.display = 'none'; grid.style.display = 'grid';
+            const products = PRODUCTS[state.category];
+            grid.innerHTML = products.map((p, i) => `<div class="product-card" style="animation-delay: ${i * 50}ms"><div class="product-image">${state.category === 'tickets' ? '🎟️' : state.category === 'parking' ? '🚗' : state.category === 'food' ? '🍽️' : state.category === 'experiences' ? '⭐' : '👕'}</div><div class="product-body">${p.popular ? `<div class="product-badge">Popular</div>` : ''}<div class="product-name">${p.name}</div><div class="product-desc">${p.desc}</div><div class="product-price">$${p.price}</div><div class="product-per">${p.per}</div><div class="product-controls">${state.cart.has(p.id) ? `<div class="qty-stepper"><button class="qty-btn" onclick="chgQty('${p.id}', -1)">−</button><div class="qty-display">${state.cart.get(p.id).qty}</div><button class="qty-btn" onclick="chgQty('${p.id}', ${state.cart.get(p.id).qty < p.max ? 1 : 0})" ${state.cart.get(p.id).qty >= p.max ? 'disabled' : ''}>+</button></div>` : `<button class="add-btn" onclick="addCart('${p.id}', '${p.name}', ${p.price}, ${p.max})">Add</button>`}</div></div></div>`).join('');
+        }
+        function renderBundles() {
+            const carousel = document.getElementById('bundlesCarousel');
+            carousel.innerHTML = BUNDLES.map((b, i) => `<div class="bundle-card" style="animation-delay: ${i * 50}ms"><div class="bundle-name">${b.name}</div><div class="bundle-items">${b.items}</div><div class="bundle-pricing"><div class="bundle-price-orig">$${b.orig}</div><div class="bundle-price">$${b.price}</div><div class="bundle-save">Save $${b.save}</div></div><button class="bundle-btn" onclick="showToast('${b.name} added to cart!', 'success')">Add Bundle</button></div>`).join('');
+        }
+        function switchCategory(cat) { state.category = cat; document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab').forEach((t, i) => { if (['tickets', 'parking', 'food', 'experiences', 'merch'][i] === cat) t.classList.add('active'); }); renderProducts(); }
+        function addCart(id, name, price, max) { if (!state.cart.has(id)) { state.cart.set(id, { name, price, qty: 1, max }); } updateUI(); showToast(`${name} added to cart`, 'success'); }
+        function chgQty(id, delta) { const item = state.cart.get(id); if (item) { item.qty += delta; if (item.qty <= 0) { state.cart.delete(id); } else if (item.qty > item.max) { item.qty = item.max; } updateUI(); renderProducts(); } }
+        function updateUI() { const count = Array.from(state.cart.values()).reduce((s, i) => s + i.qty, 0); const total = Array.from(state.cart.values()).reduce((s, i) => s + i.price * i.qty, 0); document.getElementById('cartCount').textContent = `${count} item${count !== 1 ? 's' : ''}`; document.getElementById('cartTotal').textContent = `$${total}`; const ctxTotal = document.getElementById('ckCtxTotal'); if (ctxTotal) ctxTotal.textContent = `$${total}`; const cartBar = document.getElementById('cartBar'); if (count > 0) { cartBar.classList.add('show'); document.getElementById('visitBadge').textContent = count; document.getElementById('visitBadge').style.display = 'flex'; } else { cartBar.classList.remove('show'); document.getElementById('visitBadge').style.display = 'none'; } renderOrderSummary(); }
+        function cartTotal() { return Array.from(state.cart.values()).reduce((s, i) => s + i.price * i.qty, 0); }
+        const SERVICE_FEE_RATE = 0.12;
+        const PROCESSING_FEE = 5;
+        function round2(n) { return Math.round(n * 100) / 100; }
+        function money(n) { return '$' + Number(n).toFixed(2); }
+        function orderTotals() {
+            const subtotal = cartTotal();
+            const discount = round2(subtotal * (state.promoPct || 0));
+            const net = subtotal - discount;
+            const fee = subtotal > 0 ? round2(net * SERVICE_FEE_RATE) : 0;
+            const processing = subtotal > 0 ? PROCESSING_FEE : 0;
+            const total = round2(net + fee + processing);
+            return { subtotal, discount, net, fee, processing, total };
+        }
+        function renderOrderSummary() {
+            const card = document.getElementById('orderSummaryCard');
+            if (!card || !state.event) return;
+            const t = orderTotals();
+            const entries = Array.from(state.cart.entries());
+            const seatEntries = entries.filter(([k]) => k.startsWith('seat-')).map(([, v]) => v)
+                .sort((a, b) => String(a.label).localeCompare(String(b.label), undefined, { numeric: true }));
+            const addonEntries = entries.filter(([k]) => !k.startsWith('seat-')).map(([, v]) => v);
+            const city = state.event.city || '';
+            const ctx = `<div class="os-event"><span class="os-event-name">${state.event.name}</span>${city ? `<span class="os-event-city">${PIN}${city}</span>` : ''}</div>`;
+            let seatsHtml = `<div class="os-section-head first">Selected Seats</div>`;
+            if (seatEntries.length === 0) {
+                seatsHtml += `<div class="os-empty">No seats selected yet.</div>`;
+            } else {
+                seatsHtml += `<div class="os-seats">` + seatEntries.map(s => {
+                    const seatNo = s.seatNo || s.label;
+                    const title = s.section ? `Section ${s.section}, Row ${s.row || '—'}` : `Seat ${seatNo}`;
+                    const parts = [];
+                    if (s.section) parts.push(`Seat ${seatNo}`);
+                    else if (s.row) parts.push(`Row ${s.row}`);
+                    if (s.category) parts.push(s.category);
+                    const sub = parts.join(' • ');
+                    const lbl = String(s.label).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                    return `<div class="os-seat"><div class="os-seat-main"><div class="os-seat-title">${title}</div>${sub ? `<div class="os-seat-sub">${sub}</div>` : ''}</div><div class="os-seat-right"><div class="os-seat-price">${money(s.price)}</div><button class="os-seat-remove" type="button" onclick="removeSeat('${lbl}')">Remove</button></div></div>`;
+                }).join('') + `</div>`;
+            }
+            const addonsHtml = addonEntries.length === 0
+                ? `<div class="os-section-head">Add-ons</div><div class="os-empty">No add-ons selected yet.</div>`
+                : `<div class="os-section-head">Add-ons</div>` + addonEntries.map(i => `<div class="os-addon-row"><span>${i.name} ×${i.qty}</span><span class="os-addon-v">${money(i.price * i.qty)}</span></div>`).join('');
+            let lines = `<div class="os-line"><span>Subtotal</span><span class="os-line-v">${money(t.subtotal)}</span></div>`;
+            if (t.discount > 0) lines += `<div class="os-line disc"><span>Promo ${state.promoCode}</span><span class="os-line-v">−${money(t.discount)}</span></div>`;
+            lines += `<div class="os-line"><span>Service Fee</span><span class="os-line-v">${money(t.fee)}</span></div>`;
+            lines += `<div class="os-line"><span>Processing</span><span class="os-line-v">${money(t.processing)}</span></div>`;
+            const ctaMap = { 1: ['Continue', 2], 2: ['Continue', 3], 3: ['Continue', 4], 4: ['Place Order', 5] };
+            const cta = ctaMap[state.step];
+            const ctaHtml = cta ? `<button class="os-cta" onclick="goStep(${cta[1]})">${cta[0]} ${ICON_ARROW}</button>` : '';
+            card.innerHTML = `<h3 class="os-title">Order Summary</h3>${ctx}${seatsHtml}${addonsHtml}<div class="os-divider"></div>${lines}<div class="os-total"><span class="os-total-label">Total</span><span class="os-total-value">${money(t.total)}</span></div>${ctaHtml}<div class="os-trust">${ICON_LOCK}Secure checkout powered by Evinra Pay</div>`;
+        }
+        function openCheckout() { state.step = 1; state.payMethod = 'card'; state.promoPct = 0; state.promoCode = ''; addonMode = 'rides'; document.getElementById('checkoutView').classList.add('show'); document.documentElement.style.overflow = 'hidden'; document.body.style.overflow = 'hidden'; resetSeatSelection(); renderStep(1); setTimeout(() => { const b = document.querySelector('.checkout-back'); if (b) b.focus(); }, 60); }
+        function closeCheckout() { document.getElementById('checkoutView').classList.remove('show'); document.documentElement.style.overflow = ''; document.body.style.overflow = ''; resetSeatSelection(); }
+        function checkoutBack() { if (state.step === 5) { finishCheckout(); return; } if (state.step === 1) { state.cart.clear(); updateUI(); backToEvents(); return; } goStep(state.step - 1); }
+        function finishCheckout() { state.cart.clear(); updateUI(); closeCheckout(); backToEvents(); showToast('Order confirmed! Check your email for tickets.', 'success'); }
+        function validateDetails() { const f = ['firstName', 'lastName', 'email', 'phone'].map(id => document.getElementById(id).value.trim()); if (f.some(v => !v)) { showToast('Please fill all fields', 'error'); return false; } return true; }
+        function goStep(target) { if (target > state.step && state.step === 1 && state.cart.size === 0) { showToast('Select at least one seat to continue', 'info'); return; } if (target > state.step && state.step === 3 && !validateDetails()) return; if (target < 1) { closeCheckout(); return; } renderStep(target); }
+        function renderWizBar(n) {
+            let html = '';
+            WIZ_STEPS.forEach((s, i) => {
+                const idx = i + 1;
+                const cls = idx < n ? 'done' : idx === n ? 'active' : '';
+                html += `<div class="wiz-step ${cls}"><div class="wiz-dot">${idx < n ? ICON_CHECK : idx}</div><div class="wiz-label">${s.label}</div></div>`;
+                if (i < WIZ_STEPS.length - 1) html += `<div class="wiz-line ${idx < n ? 'done' : ''}"></div>`;
+            });
+            document.getElementById('wizBar').innerHTML = html;
+        }
+        function renderStep(n) {
+            state.step = n;
+            document.getElementById('checkoutView').dataset.step = n;
+            document.querySelectorAll('.checkout-view .step').forEach(s => s.classList.remove('active'));
+            document.getElementById(`step${n}`).classList.add('active');
+            renderWizBar(n);
+            document.getElementById('checkoutStepLabel').textContent = `Step ${n} of ${WIZ_TOTAL}`;
+            if (state.func) document.getElementById('checkoutContext').innerHTML = `${CLOCK}<span class="ck-ctx-text"><strong>${state.event.name}</strong> <span class="ck-ctx-sep">·</span> ${state.func.day} <span class="ck-ctx-sep">·</span> ${state.func.time}</span><span class="ck-ctx-total" id="ckCtxTotal">$${cartTotal()}</span>`;
+            const footer = document.getElementById('checkoutFooter');
+            const body = document.querySelector('.checkout-body'); if (body) body.scrollTop = 0;
+            const main = document.querySelector('.checkout-main'); if (main) main.scrollTop = 0;
+            renderOrderSummary();
+            const back = to => `<button class="btn-secondary" onclick="goStep(${to})">Back</button>`;
+            if (n === 1) { initSeatsio(); renderSeatChips(); updateSeatCounter(); updateSeatSummary(); footer.innerHTML = `<button class="btn-primary" onclick="goStep(2)">Continue</button>`; }
+            else if (n === 2) { renderAddons(); footer.innerHTML = back(1) + `<button class="btn-primary" onclick="goStep(3)">Continue</button>`; }
+            else if (n === 3) { footer.innerHTML = back(2) + `<button class="btn-primary" onclick="goStep(4)">Continue</button>`; }
+            else if (n === 4) { renderPayment(); footer.innerHTML = back(3) + `<button class="btn-primary" onclick="goStep(5)">Place Order</button>`; }
+            else if (n === 5) { renderConfirm(); footer.innerHTML = `<button class="btn-primary" onclick="finishCheckout()">Done</button>`; }
+        }
+        // ===== Add-ons: Rides & Experiences + Credit Packages (same catalog as the box office) =====
+        const ADDON_MAX = 20;
+        const ADDONS = [
+            { id: 'ride-ferris', cat: 'ride', name: 'Ferris Wheel', price: 15 },
+            { id: 'ride-carousel', cat: 'ride', name: 'Carousel', price: 10 },
+            { id: 'ride-zipline', cat: 'ride', name: 'Zipline', price: 25 },
+            { id: 'ride-bumper', cat: 'ride', name: 'Bumper Cars', price: 12 },
+            { id: 'exp-backstage', cat: 'exp', name: 'Backstage Tour', price: 85 },
+            { id: 'exp-meet', cat: 'exp', name: 'Meet & Greet', price: 120 },
+            { id: 'exp-lounge', cat: 'exp', name: 'VIP Lounge Access', price: 65 }
+        ];
+        const CREDIT_PKGS = [
+            { id: 'cpkg-starter', name: 'Starter Pack', credits: 50, price: 45 },
+            { id: 'cpkg-value', name: 'Value Pack', credits: 100, price: 85 },
+            { id: 'cpkg-popular', name: 'Popular Pack', credits: 200, price: 160 },
+            { id: 'cpkg-premium', name: 'Premium Pack', credits: 500, price: 375 }
+        ];
+        const ICON_STAR = "<svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2'/></svg>";
+        const ICON_COIN = "<svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='M12 6v12M9 9.5A3 3 0 0 1 15 10c0 2-3 2.5-3 5'/><circle cx='12' cy='18' r='.5' fill='currentColor'/></svg>";
+        let addonMode = 'rides';
+        function findAddon(id) { return ADDONS.find(a => a.id === id) || CREDIT_PKGS.find(p => p.id === id) || null; }
+        function switchAddonMode(mode) { addonMode = mode; renderAddons(); }
+        function addonRow(item, badge, priceText) {
+            const inCart = state.cart.get(item.id);
+            const control = inCart
+                ? `<div class="qty-stepper addon-qty"><button class="qty-btn" aria-label="Decrease quantity" onclick="addonQty('${item.id}',-1)">−</button><div class="qty-display">${inCart.qty}</div><button class="qty-btn" aria-label="Increase quantity" onclick="addonQty('${item.id}',1)" ${inCart.qty >= ADDON_MAX ? 'disabled' : ''}>+</button></div>`
+                : `<button class="addon-add" onclick="addonAdd('${item.id}')">Add</button>`;
+            return `<div class="addon-row"><div class="addon-row-main"><div class="addon-row-name" style="display:flex;align-items:center;gap:7px">${badge}<span>${item.name}</span></div><div class="addon-row-price">${priceText}</div></div>${control}</div>`;
+        }
+        function renderAddons() {
+            const toggle = `<div class="addon-mode-toggle" role="tablist" aria-label="Add-on category">`
+                + `<button class="addon-mode-btn${addonMode === 'rides' ? ' active' : ''}" role="tab" aria-selected="${addonMode === 'rides'}" onclick="switchAddonMode('rides')">${ICON_STAR}Rides &amp; Experiences</button>`
+                + `<button class="addon-mode-btn${addonMode === 'credits' ? ' active' : ''}" role="tab" aria-selected="${addonMode === 'credits'}" onclick="switchAddonMode('credits')">${ICON_COIN}Credit Packages</button>`
+                + `</div>`;
+            let body = '';
+            if (addonMode === 'rides') {
+                body += `<div class="addon-cat-head">Rides</div>`;
+                ADDONS.filter(a => a.cat === 'ride').forEach(a => body += addonRow(a, `<span class="addon-tag ride">Ride</span>`, `$${a.price} each`));
+                body += `<div class="addon-cat-head">Experiences</div>`;
+                ADDONS.filter(a => a.cat === 'exp').forEach(a => body += addonRow(a, `<span class="addon-tag exp">Exp</span>`, `$${a.price} each`));
+            } else {
+                CREDIT_PKGS.forEach(p => body += addonRow(p, `<span class="credit-badge">${p.credits} CR</span>`, `$${p.price} <span style="color:var(--text3);font-weight:400">· ${p.credits} credits</span>`));
+            }
+            document.getElementById('addonList').innerHTML = toggle + body;
+        }
+        function addonAdd(id) { const a = findAddon(id); if (!a) return; if (!state.cart.has(id)) state.cart.set(id, { name: a.name, price: a.price, qty: 1, max: ADDON_MAX }); updateUI(); renderAddons(); showToast(`${a.name} added`, 'success'); }
+        function addonQty(id, delta) { const it = state.cart.get(id); if (!it) return; it.qty += delta; if (it.qty <= 0) state.cart.delete(id); else if (it.qty > ADDON_MAX) it.qty = ADDON_MAX; updateUI(); renderAddons(); }
+        function renderPayment() {
+            document.getElementById('payMethods').innerHTML = PAY_METHODS.map(m => `<div class="pay-method${state.payMethod === m.id ? ' selected' : ''}" role="radio" aria-checked="${state.payMethod === m.id}" tabindex="0" onclick="selectPay('${m.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectPay('${m.id}')}">${m.icon}<span class="pay-method-label">${m.label}</span><span class="pay-radio"></span></div>`).join('');
+        }
+        function selectPay(id) { state.payMethod = id; renderPayment(); }
+        function applyPromo() {
+            const code = document.getElementById('promoInput').value.trim().toUpperCase();
+            if (!code) { showToast('Enter a promo code', 'info'); return; }
+            if (PROMOS[code]) { state.promoPct = PROMOS[code]; state.promoCode = code; renderOrderSummary(); showToast(`Promo ${code} applied — ${Math.round(PROMOS[code] * 100)}% off`, 'success'); }
+            else { state.promoPct = 0; state.promoCode = ''; renderOrderSummary(); showToast('Invalid promo code', 'error'); }
+        }
+        function generateVerifyCode() { const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 18; i++) s += c[Math.floor(Math.random() * c.length)]; return s; }
+        const TKT_CLOCK = "<svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><polyline points='12 6 12 12 16 14'/></svg>";
+        const TKT_STAR = "<svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2'/></svg>";
+        function ticketCardHTML(o) {
+            const accentClass = o.type === 'credit' ? 'credit'
+                : o.type === 'addon' ? (o.category === 'ride' ? 'ride' : 'exp')
+                : (/vip/i.test(o.name) ? 'vip' : '');
+            let topHTML = '';
+            if (o.type === 'ticket') {
+                const seats = `<div class="tkt-c-seat-row"><div class="tkt-c-seat-col"><span class="tkt-c-seat-lbl">Row</span><span class="tkt-c-seat-val">${o.row}</span></div><div class="tkt-c-seat-col"><span class="tkt-c-seat-lbl">Seat</span><span class="tkt-c-seat-val">${o.seatNo}</span></div><div class="tkt-c-seat-col"><span class="tkt-c-seat-lbl">Section</span><span class="tkt-c-seat-val">${o.section}</span></div></div>`;
+                topHTML = `<div class="tkt-c-top"><div class="tkt-c-name">${o.name}</div>${seats}<div class="tkt-c-venue">${o.show}</div><div class="tkt-c-datetime">${o.dateStr}</div></div>`;
+            } else if (o.type === 'credit') {
+                topHTML = `<div class="tkt-c-credit-top"><div class="tkt-c-credit-split"><div><div class="tkt-c-seat-lbl">Credit Package</div><div class="tkt-c-seat-val">${o.name}</div></div><div style="text-align:right"><div class="tkt-c-seat-lbl">Balance</div><div class="tkt-c-credit-amount">${o.credits}<span style="font-size:11px;font-weight:600;letter-spacing:.04em;margin-left:2px">CR</span></div></div></div><div class="tkt-c-venue">${o.show}</div><div class="tkt-c-datetime">${o.dateStr}</div></div>`;
+            } else {
+                const isRide = o.category === 'ride';
+                const icon = isRide ? TKT_CLOCK : TKT_STAR;
+                topHTML = `<div class="tkt-c-addon-top"><div class="tkt-c-addon-icon ${o.category}">${icon}</div><div><div class="tkt-c-addon-name">${o.name}</div><div class="tkt-c-addon-sub">${isRide ? 'Ride' : 'Experience'} · ${o.show}</div><div class="tkt-c-datetime" style="margin-top:5px">${o.dateStr}</div></div></div>`;
+            }
+            const payTag = o.payment ? `<div class="tkt-c-pay">${o.payment}</div>` : '';
+            const qid = 'qr_' + o.verifyCode;
+            return `<div class="tkt-single-card"><div class="tkt-c-accent ${accentClass}"></div>${topHTML}<div class="tkt-c-divider"></div><div class="tkt-c-banner"></div><div class="tkt-c-bottom"><div class="tkt-c-qr" id="${qid}"></div><div class="tkt-c-code-wrap"><div class="tkt-c-code">${o.verifyCode.match(/.{1,6}/g).join('\n')}</div>${payTag}</div></div></div>`;
+        }
+        function renderTicketQR(qid, text) {
+            const el = document.getElementById(qid);
+            if (!el) return;
+            if (typeof QRCode !== 'undefined') {
+                new QRCode(el, { text, width: 60, height: 60, colorDark: '#111111', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+            } else {
+                el.innerHTML = `<svg width="60" height="60" viewBox="0 0 7 7" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect width="7" height="7" fill="#fff"/><path fill="#111" d="M0 0h3v1H0zM4 0h1v1H4zM6 0h1v1H6zM0 1h1v1H0zM2 1h1v1H2zM4 1h1v1H4zM0 2h1v1H0zM2 2h1v1H2zM5 2h2v1H5zM4 3h1v1H4zM6 3h1v1H6zM0 4h1v1H0zM2 4h3v1H2zM6 4h1v1H6zM0 5h1v1H0zM3 5h1v1H3zM5 5h1v1H5zM1 6h2v1H1zM4 6h1v1H4zM6 6h1v1H6z"/></svg>`;
+            }
+        }
+        function renderConfirm() {
+            const firstName = document.getElementById('firstName').value; const lastName = document.getElementById('lastName').value;
+            state.buyer = { firstName, lastName };
+            const orderNum = 'EVN-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+            document.getElementById('orderNumber').textContent = `Order #${orderNum}`;
+            const payMap = { card: 'Card', apple: 'Apple Pay', wallet: 'Wallet' };
+            const payment = payMap[state.payMethod] || 'Card';
+            const dateStr = [state.selectedDate, state.selectedTime].filter(Boolean).join(' · ');
+            const show = state.event ? state.event.name : '';
+            const cards = []; const qrJobs = [];
+            Array.from(state.cart.entries()).forEach(([key, item]) => {
+                const qty = item.qty || 1;
+                for (let i = 0; i < qty; i++) {
+                    let o;
+                    if (key.startsWith('seat-')) {
+                        o = { type: 'ticket', name: item.category || 'General Admission', row: item.row || '—', seatNo: item.seatNo || item.label || '—', section: item.section || 'GA', show, dateStr };
+                    } else if (key.startsWith('cpkg-')) {
+                        const a = findAddon(key);
+                        o = { type: 'credit', name: item.name, credits: a ? a.credits : '', show, dateStr };
+                    } else {
+                        const a = findAddon(key);
+                        o = { type: 'addon', category: a && a.cat ? a.cat : 'ride', name: item.name, show, dateStr };
+                    }
+                    o.payment = payment; o.verifyCode = generateVerifyCode(); o.orderNum = orderNum;
+                    cards.push(ticketCardHTML(o));
+                    qrJobs.push({ qid: 'qr_' + o.verifyCode, text: orderNum + '|' + o.verifyCode });
+                }
+            });
+            const grid = document.getElementById('ticketGrid');
+            grid.innerHTML = cards.join('');
+            setTimeout(() => qrJobs.forEach(j => renderTicketQR(j.qid, j.text)), 60);
+        }
+        function showToast(msg, type = 'info') { const container = document.getElementById('toastContainer'); const toast = document.createElement('div'); toast.className = `toast ${type}`; const icons = { success: '✓', error: '✕', info: 'ℹ' }; toast.innerHTML = `<span class="toast-icon">${icons[type]}</span><span>${msg}</span>`; container.appendChild(toast); setTimeout(() => toast.remove(), 3200); }
+        function initTheme() { const saved = localStorage.getItem('evinra-theme') || 'dark'; document.documentElement.setAttribute('data-theme', saved); updateThemeButton(); }
+        function toggleTheme() { const current = document.documentElement.getAttribute('data-theme'); const next = current === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', next); localStorage.setItem('evinra-theme', next); updateThemeButton(); }
+        function updateThemeButton() { const theme = document.documentElement.getAttribute('data-theme'); const btn = document.getElementById('themeToggle'); btn.innerHTML = theme === 'dark' ? ICON_SUN : ICON_MOON; btn.setAttribute('aria-label', theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'); }
+        function switchNav(page) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); document.querySelector(`.nav-item[onclick*="'${page}'"]`)?.classList.add('active'); if (page === 'explore') { backToEvents(); } else { showToast(`${page.charAt(0).toUpperCase() + page.slice(1)} — coming soon`, 'info'); } }
+        document.addEventListener('DOMContentLoaded', () => { initTheme(); document.getElementById('themeToggle').addEventListener('click', toggleTheme); renderFilters(); renderDateOptions(); setView(localStorage.getItem('evinra-view') || 'list'); });
+    </script>
+</body>
+</html>
