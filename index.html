@@ -607,8 +607,18 @@
         ];
 
         // ===== Shared-DB loader (synchronous XHR so data is ready before any render call) =====
+        function _sfHexA(hex, a){ var h=String(hex||'').replace('#',''); if(h.length!==6) return hex; return 'rgba('+parseInt(h.slice(0,2),16)+','+parseInt(h.slice(2,4),16)+','+parseInt(h.slice(4,6),16)+','+a+')'; }
+        function applyStorefrontBranding(t){
+            if(!t) return;
+            var r=document.documentElement.style;
+            if(t.storefront_primary){ r.setProperty('--teal',t.storefront_primary); r.setProperty('--teal-light',t.storefront_primary); r.setProperty('--teal-dim',_sfHexA(t.storefront_primary,.14)); }
+            if(t.storefront_secondary){ r.setProperty('--navy',t.storefront_secondary); }
+            if(t.storefront_logo){ var a=document.querySelector('.brand-logo'); if(a){ a.innerHTML='<img src="'+t.storefront_logo+'" alt="logo" style="height:26px;width:auto;display:block">'; } }
+        }
         (function loadStorefrontData() {
-            const BASE = 'http://localhost:4000/api/db';
+            const BASE = ((window.EvinraDB && EvinraDB.SERVICE) ? EvinraDB.SERVICE : 'http://localhost:4000') + '/api/db';
+            // Which company's storefront is this? ?tenant=<id> (persisted) → per-tenant brand + catalogue.
+            const TENANT = (function(){ try { var q=new URLSearchParams(location.search).get('tenant'); if(q){ localStorage.setItem('evinra-sf-tenant', q); return q; } return localStorage.getItem('evinra-sf-tenant'); } catch(e){ return null; } })();
             function xhrGet(url) {
                 try {
                     const xhr = new XMLHttpRequest();
@@ -619,9 +629,13 @@
                 return null;
             }
 
-            const rawEvents      = xhrGet(BASE + '/events');
+            let rawEvents        = xhrGet(BASE + '/events');
             const rawTicketTypes = xhrGet(BASE + '/ticket_types');
-            const rawShows       = xhrGet(BASE + '/shows');
+            let rawShows         = xhrGet(BASE + '/shows');
+            const rawProds       = xhrGet(BASE + '/productions');
+
+            // Apply this tenant's storefront branding (logo + colors).
+            if (TENANT) { var _tn = xhrGet(BASE + '/tenants?_id=eq.' + encodeURIComponent(TENANT)); applyStorefrontBranding(Array.isArray(_tn) ? _tn[0] : null); }
 
             if (!rawEvents || !Array.isArray(rawEvents)) {
                 // :4000 unreachable — use demo data as-is
@@ -632,7 +646,15 @@
                 return;
             }
 
-            console.log('Storefront: source=shared-db');
+            // Scope the catalogue to this tenant (event → show → production → tenant).
+            if (TENANT && Array.isArray(rawProds) && Array.isArray(rawShows)) {
+                var _prodTenant = {}; rawProds.forEach(function(p){ _prodTenant[p.id] = String(p.tenant_id); });
+                var _keepShow = {}; rawShows.forEach(function(s){ if (_prodTenant[s.production_id] === String(TENANT)) _keepShow[s.id] = 1; });
+                rawShows  = rawShows.filter(function(s){ return _keepShow[s.id]; });
+                rawEvents = rawEvents.filter(function(e){ return _keepShow[e.show_id]; });
+            }
+
+            console.log('Storefront: source=shared-db' + (TENANT ? ' (tenant '+TENANT+', '+rawEvents.length+' events)' : ''));
 
             // Build a price lookup keyed by event_id from ticket_types
             const ttByEvent = {};
