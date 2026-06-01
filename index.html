@@ -594,9 +594,10 @@
     </div>
     <div class="toast-container" id="toastContainer"></div>
     <script>const state = { cart: new Map(), category: 'tickets', step: 1, selectedDate: null, selectedTime: null, buyer: {}, event: null, func: null };
-        const PRODUCTS = { tickets: [{ id: 't1', name: 'General Admission', desc: 'Park entry & unlimited rides', price: 24, per: 'per person', popular: true, max: 20 }, { id: 't2', name: 'VIP Fast Pass', desc: 'Skip lines + lounge access', price: 49, per: 'per person', max: 10 }, { id: 't3', name: 'Family Bundle', desc: '4 tickets + parking', price: 79, per: 'per family', max: 5 }], parking: [{ id: 'p1', name: 'Standard Parking', desc: 'Surface lot parking', price: 10, per: 'per car', popular: true, max: 50 }, { id: 'p2', name: 'Premium Parking', desc: 'Close to entrance', price: 20, per: 'per car', max: 20 }, { id: 'p3', name: 'Valet Parking', desc: 'Full valet service', price: 35, per: 'per car', max: 10 }], food: [{ id: 'f1', name: 'Meal Voucher', desc: '$30 food credit', price: 25, per: 'per voucher', popular: true, max: 100 }, { id: 'f2', name: 'Beverage Package', desc: '4 drink tickets', price: 18, per: 'per package', max: 50 }, { id: 'f3', name: 'Gourmet Dining', desc: 'Premium meal experience', price: 55, per: 'per person', max: 30 }], experiences: [{ id: 'e1', name: 'Meet & Greet', desc: 'Exclusive artist meet', price: 75, per: 'per person', popular: true, max: 15 }, { id: 'e2', name: 'VIP Lounge', desc: 'All-day lounge access', price: 45, per: 'per person', max: 25 }, { id: 'e3', name: 'Photo Package', desc: 'Professional photos', price: 60, per: 'per person', max: 20 }], merch: [{ id: 'm1', name: 'Event T-Shirt', desc: 'Official commemorative tee', price: 24, per: 'per shirt', popular: true, max: 100 }, { id: 'm2', name: 'Merchandise Bundle', desc: 'Shirt + hat + pins', price: 45, per: 'per bundle', max: 50 }, { id: 'm3', name: 'Premium Hoodie', desc: 'Limited edition hoodie', price: 65, per: 'per hoodie', max: 30 }] };
-        const BUNDLES = [{ name: 'The Classic', items: '2 GA + 1 Parking', orig: 58, price: 48, save: 10 }, { name: 'Family Day', items: '4 GA + 2 Parking + Meals', orig: 136, price: 99, save: 37 }, { name: 'VIP All-In', items: '2 VIP + Meet & Greet + Merch', orig: 213, price: 159, save: 54 }];
-        const EVENTS = [
+        // ===== Demo fallback data (used when :4000 is unreachable) =====
+        const _DEMO_PRODUCTS = { tickets: [{ id: 't1', name: 'General Admission', desc: 'Park entry & unlimited rides', price: 24, per: 'per person', popular: true, max: 20 }, { id: 't2', name: 'VIP Fast Pass', desc: 'Skip lines + lounge access', price: 49, per: 'per person', max: 10 }, { id: 't3', name: 'Family Bundle', desc: '4 tickets + parking', price: 79, per: 'per family', max: 5 }], parking: [{ id: 'p1', name: 'Standard Parking', desc: 'Surface lot parking', price: 10, per: 'per car', popular: true, max: 50 }, { id: 'p2', name: 'Premium Parking', desc: 'Close to entrance', price: 20, per: 'per car', max: 20 }, { id: 'p3', name: 'Valet Parking', desc: 'Full valet service', price: 35, per: 'per car', max: 10 }], food: [{ id: 'f1', name: 'Meal Voucher', desc: '$30 food credit', price: 25, per: 'per voucher', popular: true, max: 100 }, { id: 'f2', name: 'Beverage Package', desc: '4 drink tickets', price: 18, per: 'per package', max: 50 }, { id: 'f3', name: 'Gourmet Dining', desc: 'Premium meal experience', price: 55, per: 'per person', max: 30 }], experiences: [{ id: 'e1', name: 'Meet & Greet', desc: 'Exclusive artist meet', price: 75, per: 'per person', popular: true, max: 15 }, { id: 'e2', name: 'VIP Lounge', desc: 'All-day lounge access', price: 45, per: 'per person', max: 25 }, { id: 'e3', name: 'Photo Package', desc: 'Professional photos', price: 60, per: 'per person', max: 20 }], merch: [{ id: 'm1', name: 'Event T-Shirt', desc: 'Official commemorative tee', price: 24, per: 'per shirt', popular: true, max: 100 }, { id: 'm2', name: 'Merchandise Bundle', desc: 'Shirt + hat + pins', price: 45, per: 'per bundle', max: 50 }, { id: 'm3', name: 'Premium Hoodie', desc: 'Limited edition hoodie', price: 65, per: 'per hoodie', max: 30 }] };
+        const _DEMO_BUNDLES = [{ name: 'The Classic', items: '2 GA + 1 Parking', orig: 58, price: 48, save: 10 }, { name: 'Family Day', items: '4 GA + 2 Parking + Meals', orig: 136, price: 99, save: 37 }, { name: 'VIP All-In', items: '2 VIP + Meet & Greet + Merch', orig: 213, price: 159, save: 54 }];
+        const _DEMO_EVENTS = [
             { id: 'ev1', name: 'Winter Fest 2026', venue: 'Central Park Arena', city: 'New York, NY', status: 'live', from: 24, tag: 'Festival', gradient: 'linear-gradient(135deg,#3B82F6,#1E3A8A)', img: 'https://loremflickr.com/200/200/festival?lock=21', functions: [{ day: 'Dec 19', time: '1:00 PM' }, { day: 'Dec 19', time: '3:00 PM' }, { day: 'Dec 19', time: '5:00 PM' }] },
             { id: 'ev2', name: 'Holiday Night Market', venue: 'Riverside Plaza', city: 'Chicago, IL', status: 'live', from: 0, tag: 'Market', gradient: 'linear-gradient(135deg,#EC4899,#9D174D)', img: 'https://loremflickr.com/200/200/market?lock=32', functions: [{ day: 'Dec 20', time: '6:00 PM' }, { day: 'Dec 21', time: '6:00 PM' }] },
             { id: 'ev3', name: "New Year's Eve Gala", venue: 'Skyline Rooftop', city: 'Los Angeles, CA', status: 'onsale', from: 60, tag: 'Nightlife', gradient: 'linear-gradient(135deg,#8B5CF6,#5B21B6)', img: 'https://loremflickr.com/200/200/party?lock=43', functions: [{ day: 'Dec 31', time: '9:00 PM' }] },
@@ -604,6 +605,111 @@
             { id: 'ev5', name: 'Summer Food & Wine', venue: 'Harbor District', city: 'San Francisco, CA', status: 'soon', from: 35, tag: 'Culinary', gradient: 'linear-gradient(135deg,#F59E0B,#B45309)', img: 'https://loremflickr.com/200/200/food?lock=65', functions: [{ day: 'Jun 7', time: '12:00 PM' }] },
             { id: 'ev6', name: 'Tech & Innovation Expo', venue: 'Convention Center', city: 'Seattle, WA', status: 'soon', from: 75, tag: 'Conference', gradient: 'linear-gradient(135deg,#06B6D4,#0E7490)', img: 'https://loremflickr.com/200/200/technology?lock=76', functions: [{ day: 'Aug 22', time: '10:00 AM' }] }
         ];
+
+        // ===== Shared-DB loader (synchronous XHR so data is ready before any render call) =====
+        (function loadStorefrontData() {
+            const BASE = 'http://localhost:4000/api/db';
+            function xhrGet(url) {
+                try {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('GET', url, false); // synchronous — timeout not settable here (InvalidAccessError)
+                    xhr.send(null);
+                    if (xhr.status >= 200 && xhr.status < 300) return JSON.parse(xhr.responseText);
+                } catch (e) { /* network error */ }
+                return null;
+            }
+
+            const rawEvents      = xhrGet(BASE + '/events');
+            const rawTicketTypes = xhrGet(BASE + '/ticket_types');
+            const rawShows       = xhrGet(BASE + '/shows');
+
+            if (!rawEvents || !Array.isArray(rawEvents)) {
+                // :4000 unreachable — use demo data as-is
+                console.log('Storefront: source=demo');
+                window.EVENTS   = _DEMO_EVENTS;
+                window.PRODUCTS = _DEMO_PRODUCTS;
+                window.BUNDLES  = _DEMO_BUNDLES;
+                return;
+            }
+
+            console.log('Storefront: source=shared-db');
+
+            // Build a price lookup keyed by event_id from ticket_types
+            const ttByEvent = {};
+            if (Array.isArray(rawTicketTypes)) {
+                rawTicketTypes.forEach(function(t) {
+                    const eid = t.event_id || t.eventId;
+                    if (!ttByEvent[eid]) ttByEvent[eid] = [];
+                    ttByEvent[eid].push(t);
+                });
+            }
+
+            // Build a show type lookup keyed by event_id
+            const showByEvent = {};
+            if (Array.isArray(rawShows)) {
+                rawShows.forEach(function(s) {
+                    const eid = s.event_id || s.eventId || s.id;
+                    showByEvent[eid] = s;
+                });
+            }
+
+            // Map DB events → storefront EVENTS shape
+            window.EVENTS = rawEvents.map(function(e) {
+                const tts = ttByEvent[e.id] || [];
+                const prices = tts.map(function(t) { return Number(t.price) || 0; }).filter(function(p) { return p > 0; });
+                const minPrice = prices.length ? Math.min.apply(null, prices) : 0;
+                const show = showByEvent[e.id] || {};
+
+                // Parse day + time from start_at (ISO string or date string)
+                let day = '', time = '';
+                if (e.start_at) {
+                    try {
+                        const d = new Date(e.start_at);
+                        day  = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                    } catch (_) { day = e.start_at; }
+                }
+
+                return {
+                    id:        String(e.id),
+                    name:      e.name || 'Unnamed Event',
+                    venue:     (e.location_name || (e.location && e.location.name) || 'Venue TBD'),
+                    city:      e.city || 'FL',
+                    status:    e.status === 'published' ? 'live' : 'upcoming',
+                    from:      minPrice,
+                    tag:       (show.type || e.type || 'Event'),
+                    gradient:  e.gradient || 'linear-gradient(135deg,#209991,#0C4A45)',
+                    img:       e.img || e.image_url || '',
+                    functions: (day || time) ? [{ day: day, time: time }] : []
+                };
+            });
+
+            // Map ticket_types → PRODUCTS.tickets (keep other categories from demo)
+            const dbTickets = Array.isArray(rawTicketTypes) ? rawTicketTypes.map(function(t) {
+                return {
+                    id:      String(t.id),
+                    name:    t.name || 'Ticket',
+                    desc:    'Ticket',
+                    price:   Number(t.price) || 0,
+                    per:     'per person',
+                    popular: false,
+                    max:     Number(t.quantity) || 20
+                };
+            }) : [];
+
+            window.PRODUCTS = Object.assign({}, _DEMO_PRODUCTS, {
+                tickets: dbTickets.length ? dbTickets : _DEMO_PRODUCTS.tickets
+            });
+
+            // BUNDLES: no DB endpoint — keep demo bundles
+            window.BUNDLES = _DEMO_BUNDLES;
+        })();
+
+        // Promote to local variables so existing code that references them without `window.` still works
+        var EVENTS   = window.EVENTS;
+        var PRODUCTS = window.PRODUCTS;
+        var BUNDLES  = window.BUNDLES;
+
         const FUNCTIONS = [];
         EVENTS.forEach(e => (e.functions || []).forEach((fn, i) => FUNCTIONS.push({ id: e.id + '-f' + i, eventId: e.id, event: e, day: fn.day, time: fn.time })));
         const PIN = "<svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'/><circle cx='12' cy='10' r='3'/></svg>";
@@ -962,6 +1068,8 @@
             document.getElementById('orderNumber').textContent = `Order #${orderNum}`;
             const payMap = { card: 'Card', apple: 'Apple Pay', wallet: 'Wallet' };
             const payment = payMap[state.payMethod] || 'Card';
+            // Persist the order to the shared DB (:4000) so it shows up in the admin / reports.
+            persistStorefrontOrder(orderNum, payment);
             const dateStr = [state.selectedDate, state.selectedTime].filter(Boolean).join(' · ');
             const show = state.event ? state.event.name : '';
             const cards = []; const qrJobs = [];
@@ -986,6 +1094,57 @@
             const grid = document.getElementById('ticketGrid');
             grid.innerHTML = cards.join('');
             setTimeout(() => qrJobs.forEach(j => renderTicketQR(j.qid, j.text)), 60);
+        }
+        // Build an order payload from the cart + buyer + totals and POST it to the shared DB.
+        function persistStorefrontOrder(orderNum, payment) {
+            if (!window.EvinraDB || typeof EvinraDB.saveOrder !== 'function') return; // shared-db client not loaded
+            try {
+                const t = orderTotals();
+                // Tickets: group seat entries by category → { name, qty, price }
+                const ticketsByCat = {};
+                const addons = [];
+                const creditPkgs = [];
+                Array.from(state.cart.entries()).forEach(([key, item]) => {
+                    if (key.startsWith('seat-')) {
+                        const c = item.category || 'General Admission';
+                        if (!ticketsByCat[c]) ticketsByCat[c] = { name: c, qty: 0, price: Number(item.price) || 0 };
+                        ticketsByCat[c].qty += (item.qty || 1);
+                    } else if (key.startsWith('cpkg-')) {
+                        creditPkgs.push({ name: item.name, qty: item.qty || 1, price: Number(item.price) || 0 });
+                    } else {
+                        const a = findAddon(key);
+                        addons.push({ name: item.name, qty: item.qty || 1, price: Number(item.price) || 0, category: (a && a.cat === 'exp') ? 'experience' : 'ride' });
+                    }
+                });
+                const fullName = [state.buyer.firstName, state.buyer.lastName].filter(Boolean).join(' ').trim();
+                const email = (document.getElementById('email') || {}).value || '';
+                const phone = (document.getElementById('phone') || {}).value || '';
+                const order = {
+                    orderNum:   orderNum,
+                    channel:    'storefront',
+                    show:       state.event ? state.event.name : '',
+                    eventLabel: [state.selectedDate, state.selectedTime].filter(Boolean).join(' · '),
+                    custName:   fullName || 'Online Customer',
+                    custEmail:  email,
+                    custPhone:  phone,
+                    payment:    payment,
+                    last4:      '',
+                    tickets:    Object.values(ticketsByCat),
+                    addons:     addons,
+                    creditPkgs: creditPkgs,
+                    subtotal:   t.subtotal,
+                    discount:   t.discount,
+                    fee:        Number(((t.fee || 0) + (t.processing || 0)).toFixed(2)),
+                    total:      t.total,
+                    status:     'completed',
+                    date:       new Date().toISOString(),
+                };
+                EvinraDB.saveOrder(order)
+                    .then(() => console.log('Storefront: order saved to shared-db', orderNum))
+                    .catch(err => console.warn('Storefront: saveOrder failed (order shown locally only)', err));
+            } catch (err) {
+                console.warn('Storefront: could not build order payload', err);
+            }
         }
         function showToast(msg, type = 'info') { const container = document.getElementById('toastContainer'); const toast = document.createElement('div'); toast.className = `toast ${type}`; const icons = { success: '✓', error: '✕', info: 'ℹ' }; toast.innerHTML = `<span class="toast-icon">${icons[type]}</span><span>${msg}</span>`; container.appendChild(toast); setTimeout(() => toast.remove(), 3200); }
         function initTheme() { const saved = localStorage.getItem('evinra-theme') || 'dark'; document.documentElement.setAttribute('data-theme', saved); updateThemeButton(); }
