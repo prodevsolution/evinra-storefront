@@ -801,9 +801,25 @@
         const PAY_METHODS = [{ id: 'card', label: 'Credit / Debit Card', icon: ICON_CARD }, { id: 'apple', label: 'Apple Pay', icon: ICON_PHONE }, { id: 'wallet', label: 'Digital Wallet', icon: ICON_WALLET }];
         const PROMOS = { EVINRA10: 0.10, SAVE10: 0.10 };
         // ===== seats.io seat map (same chart as the box office) =====
-        const SEATSIO_PUBLIC_KEY = 'c39762f1-8418-43a3-a5b7-55d92f6a4c13';
-        const SEATSIO_CHART_KEY = 'f91ffcd4-0f31-7c67-5d90-cdf785116385';
-        const SEATSIO_REGION = 'na';
+        // Public config is loaded from the backend (/api/seatsio/status, set via env);
+        // these constants are the fallback if the service isn't configured.
+        let SEATSIO_PUBLIC_KEY = 'c39762f1-8418-43a3-a5b7-55d92f6a4c13';
+        let SEATSIO_CHART_KEY = 'f91ffcd4-0f31-7c67-5d90-cdf785116385';
+        let SEATSIO_REGION = 'na';
+        function sfServiceBase(){ return (window.EvinraDB && EvinraDB.SERVICE) ? EvinraDB.SERVICE : 'http://localhost:4000'; }
+        async function loadSeatsioConfig(){
+            try {
+                const r = await fetch(sfServiceBase() + '/api/seatsio/status');
+                if (!r.ok) return;
+                const c = await r.json();
+                if (c && c.configured) {
+                    if (c.workspaceKey) SEATSIO_PUBLIC_KEY = c.workspaceKey;
+                    if (c.chartKey)     SEATSIO_CHART_KEY  = c.chartKey;
+                    if (c.region)       SEATSIO_REGION     = c.region;
+                }
+            } catch (e) { /* keep fallback constants */ }
+        }
+        loadSeatsioConfig();
         // Category label → seat price (the chart carries no pricing, so we map it here)
         const SEAT_PRICES = { 'VIP Admission': 120, 'VIP': 120, 'Premium Admission': 75, 'General Admission': 45, 'ADA Wheerchair Accesible': 45, 'ADA Accesible Seat': 45 };
         const SEAT_PRICE_DEFAULT = 45;
