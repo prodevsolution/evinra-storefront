@@ -683,6 +683,9 @@
             const rawTicketTypes = xhrGet(BASE + '/ticket_types');
             let rawShows         = xhrGet(BASE + '/shows');
             const rawProds       = xhrGet(BASE + '/productions');
+            const rawLayouts     = xhrGet(BASE + '/layouts');
+            // Map layout id → seats.io chart key (each event renders its own assigned layout's chart)
+            const layoutChart = {}; if (Array.isArray(rawLayouts)) rawLayouts.forEach(function(l){ layoutChart[String(l.id)] = l.key || ''; });
 
             // Apply this tenant's storefront branding (logo + colors).
             if (TENANT) { var _tn = xhrGet(BASE + '/tenants?_id=eq.' + encodeURIComponent(TENANT)); applyStorefrontBranding(Array.isArray(_tn) ? _tn[0] : null); }
@@ -742,6 +745,10 @@
                     } catch (_) { day = e.start_at; }
                 }
 
+                // Resolve this event's seats.io chart from its assigned layout (Layout Management)
+                const _lid = (e.layout && e.layout.selected) ? String(e.layout.selected) : '';
+                const _chart = (_lid && layoutChart[_lid]) ? layoutChart[_lid] : '';
+
                 return {
                     id:        String(e.id),
                     name:      e.name || 'Unnamed Event',
@@ -752,6 +759,7 @@
                     tag:       (show.type || e.type || 'Event'),
                     gradient:  e.gradient || 'linear-gradient(135deg,#209991,#0C4A45)',
                     img:       e.img || e.image_url || '',
+                    chart:     _chart,
                     functions: (day || time) ? [{ day: day, time: time }] : []
                 };
             });
@@ -836,10 +844,11 @@
             if (typeof seatsio === 'undefined' || !seatsio.SeatingChart) { seatErrorOverlay('Seat map library failed to load. Check your connection and try again.'); return; }
             seatLoadingOverlay();
             try {
+                const eventChart = (state.event && state.event.chart) ? state.event.chart : SEATSIO_CHART_KEY;
                 seatsioChart = new seatsio.SeatingChart({
                     divId: 'seatsio-chart',
                     workspaceKey: SEATSIO_PUBLIC_KEY,
-                    chart: SEATSIO_CHART_KEY,
+                    chart: eventChart,
                     mode: 'normal',
                     region: SEATSIO_REGION,
                     colorScheme: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark',
