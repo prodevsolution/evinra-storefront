@@ -108,6 +108,17 @@
         .guest-tag { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; padding: 3px 9px; border-radius: 999px; background: var(--teal-dim, rgba(45,184,156,.14)); color: var(--teal-light); border: 1px solid rgba(45,184,156,.32); font-size: 10px; font-weight: 700; letter-spacing: .3px; text-transform: none; }
         .guest-tag svg { width: 11px; height: 11px; }
         .opt-tag { font-size: 11px; font-weight: 500; color: var(--text4, #6b7d99); text-transform: none; letter-spacing: 0; }
+        .acct-seg { display: flex; gap: 4px; padding: 4px; background: var(--bg1); border: 1px solid var(--bg3); border-radius: 12px; margin-bottom: 16px; }
+        .acct-tab { flex: 1; min-height: 40px; border: none; background: none; color: var(--text3); font-family: inherit; font-size: 13px; font-weight: 600; border-radius: 9px; cursor: pointer; transition: all .15s ease-out; }
+        .acct-tab:hover { color: var(--text1); }
+        .acct-tab.on { background: var(--bg3); color: var(--text1); }
+        .acct-signedin { display: flex; align-items: center; gap: 10px; padding: 12px 14px; margin-bottom: 16px; background: var(--teal-dim, rgba(45,184,156,.12)); border: 1px solid rgba(45,184,156,.32); border-radius: 12px; }
+        .acct-signedin .acct-av { width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; background: var(--teal); color: #04121f; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+        .acct-signedin .acct-info { flex: 1; min-width: 0; line-height: 1.3; }
+        .acct-signedin .acct-name { font-size: 13px; font-weight: 700; color: var(--text1); }
+        .acct-signedin .acct-email { font-size: 11px; color: var(--text3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .acct-signedin .acct-out { flex-shrink: 0; background: none; border: 1px solid var(--bg4, rgba(255,255,255,.18)); color: var(--text2); font-size: 11px; font-weight: 600; padding: 6px 11px; border-radius: 8px; cursor: pointer; font-family: inherit; }
+        .acct-signedin .acct-out:hover { color: var(--text1); }
         .step-title::after { content: ''; flex: 1; height: 1px; background: var(--bg3); }
         .panel-section-title { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text2); margin: 22px 0 12px; }
         .panel-section-title::after { content: ''; flex: 1; height: 1px; background: var(--bg3); }
@@ -565,8 +576,24 @@
           <div id="addonList"></div>
         </div>
         <div class="step" id="step3">
-          <h3 class="step-title">Customer Information <span class="guest-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Guest checkout</span></h3>
-          <p class="field-hint">No account needed — we'll email your tickets &amp; receipt.</p>
+          <h3 class="step-title">Your Details</h3>
+          <div class="acct-seg" id="acctChooser">
+            <button type="button" class="acct-tab on" id="tabGuest" onclick="sfAuthMode('guest')">Continue as guest</button>
+            <button type="button" class="acct-tab" id="tabSignin" onclick="sfAuthMode('signin')">Sign in</button>
+          </div>
+          <div class="acct-signedin" id="acctSignedin" style="display:none"></div>
+          <div id="signinPanel" style="display:none">
+            <div class="form-group"><label class="form-label" for="siEmail">Email</label><input class="form-input" type="email" id="siEmail" placeholder="you@example.com" autocomplete="email"></div>
+            <div class="form-group"><label class="form-label" for="siPass">Password</label><input class="form-input" type="password" id="siPass" placeholder="••••••••" autocomplete="current-password"></div>
+            <div id="signupExtra" style="display:none">
+              <div class="form-group"><label class="form-label" for="suFirst">First Name</label><input class="form-input" type="text" id="suFirst" placeholder="John" autocomplete="given-name"></div>
+              <div class="form-group"><label class="form-label" for="suLast">Last Name</label><input class="form-input" type="text" id="suLast" placeholder="Doe" autocomplete="family-name"></div>
+              <div class="form-group"><label class="form-label" for="suPhone">Phone <span class="opt-tag">optional</span></label><input class="form-input" type="tel" id="suPhone" placeholder="+1 (555) 000-0000" autocomplete="tel"></div>
+            </div>
+            <button type="button" class="btn-primary" id="siBtn" onclick="sfDoAuth()" style="width:100%;min-height:46px;margin-top:2px">Sign in</button>
+            <p class="field-hint" style="margin-top:10px;text-align:center"><span id="siSwitchText">New customer?</span> <a href="#" id="siSwitchLink" onclick="sfToggleSignup(event)" style="color:var(--teal-light);font-weight:700">Create an account</a></p>
+          </div>
+          <p class="field-hint" id="guestHint">No account needed — we'll email your tickets &amp; receipt.</p>
           <form id="buyerForm" onsubmit="goStep(4); return false;">
             <div class="form-group"><label class="form-label" for="firstName">First Name *</label><input class="form-input" type="text" id="firstName" placeholder="John" autocomplete="given-name" required></div>
             <div class="form-group"><label class="form-label" for="lastName">Last Name *</label><input class="form-input" type="text" id="lastName" placeholder="Doe" autocomplete="family-name" required></div>
@@ -596,7 +623,7 @@
       <div class="checkout-footer" id="checkoutFooter"></div>
     </div>
     <div class="toast-container" id="toastContainer"></div>
-    <script>const state = { cart: new Map(), category: 'tickets', step: 1, selectedDate: null, selectedTime: null, buyer: {}, event: null, func: null };
+    <script>const state = { cart: new Map(), category: 'tickets', step: 1, selectedDate: null, selectedTime: null, buyer: {}, event: null, func: null, customer: null, authMode: 'guest', signupMode: false };
         // ===== Demo fallback data (used when :4000 is unreachable) =====
         const _DEMO_PRODUCTS = { tickets: [{ id: 't1', name: 'General Admission', desc: 'Park entry & unlimited rides', price: 24, per: 'per person', popular: true, max: 20 }, { id: 't2', name: 'VIP Fast Pass', desc: 'Skip lines + lounge access', price: 49, per: 'per person', max: 10 }, { id: 't3', name: 'Family Bundle', desc: '4 tickets + parking', price: 79, per: 'per family', max: 5 }], parking: [{ id: 'p1', name: 'Standard Parking', desc: 'Surface lot parking', price: 10, per: 'per car', popular: true, max: 50 }, { id: 'p2', name: 'Premium Parking', desc: 'Close to entrance', price: 20, per: 'per car', max: 20 }, { id: 'p3', name: 'Valet Parking', desc: 'Full valet service', price: 35, per: 'per car', max: 10 }], food: [{ id: 'f1', name: 'Meal Voucher', desc: '$30 food credit', price: 25, per: 'per voucher', popular: true, max: 100 }, { id: 'f2', name: 'Beverage Package', desc: '4 drink tickets', price: 18, per: 'per package', max: 50 }, { id: 'f3', name: 'Gourmet Dining', desc: 'Premium meal experience', price: 55, per: 'per person', max: 30 }], experiences: [{ id: 'e1', name: 'Meet & Greet', desc: 'Exclusive artist meet', price: 75, per: 'per person', popular: true, max: 15 }, { id: 'e2', name: 'VIP Lounge', desc: 'All-day lounge access', price: 45, per: 'per person', max: 25 }, { id: 'e3', name: 'Photo Package', desc: 'Professional photos', price: 60, per: 'per person', max: 20 }], merch: [{ id: 'm1', name: 'Event T-Shirt', desc: 'Official commemorative tee', price: 24, per: 'per shirt', popular: true, max: 100 }, { id: 'm2', name: 'Merchandise Bundle', desc: 'Shirt + hat + pins', price: 45, per: 'per bundle', max: 50 }, { id: 'm3', name: 'Premium Hoodie', desc: 'Limited edition hoodie', price: 65, per: 'per hoodie', max: 30 }] };
         const _DEMO_BUNDLES = [{ name: 'The Classic', items: '2 GA + 1 Parking', orig: 58, price: 48, save: 10 }, { name: 'Family Day', items: '4 GA + 2 Parking + Meals', orig: 136, price: 99, save: 37 }, { name: 'VIP All-In', items: '2 VIP + Meet & Greet + Merch', orig: 213, price: 159, save: 54 }];
@@ -963,11 +990,90 @@
             const ctaHtml = cta ? `<button class="os-cta" onclick="goStep(${cta[1]})">${cta[0]} ${ICON_ARROW}</button>` : '';
             card.innerHTML = `<h3 class="os-title">Order Summary</h3>${ctx}${seatsHtml}${addonsHtml}<div class="os-divider"></div>${lines}<div class="os-total"><span class="os-total-label">Total</span><span class="os-total-value">${money(t.total)}</span></div>${ctaHtml}<div class="os-trust">${ICON_LOCK}Secure checkout powered by Evinra Pay</div>`;
         }
-        function openCheckout() { state.step = 1; state.payMethod = 'card'; state.promoPct = 0; state.promoCode = ''; addonMode = 'rides'; document.getElementById('checkoutView').classList.add('show'); document.documentElement.style.overflow = 'hidden'; document.body.style.overflow = 'hidden'; resetSeatSelection(); renderStep(1); setTimeout(() => { const b = document.querySelector('.checkout-back'); if (b) b.focus(); }, 60); }
+        function openCheckout() { state.step = 1; state.payMethod = 'card'; state.promoPct = 0; state.promoCode = ''; addonMode = 'rides'; document.getElementById('checkoutView').classList.add('show'); document.documentElement.style.overflow = 'hidden'; document.body.style.overflow = 'hidden'; resetSeatSelection(); sfRestoreCustomer(); renderStep(1); setTimeout(() => { const b = document.querySelector('.checkout-back'); if (b) b.focus(); }, 60); }
         function closeCheckout() { document.getElementById('checkoutView').classList.remove('show'); document.documentElement.style.overflow = ''; document.body.style.overflow = ''; resetSeatSelection(); }
         function checkoutBack() { if (state.step === 5) { finishCheckout(); return; } if (state.step === 1) { state.cart.clear(); updateUI(); backToEvents(); return; } goStep(state.step - 1); }
         function finishCheckout() { state.cart.clear(); updateUI(); closeCheckout(); backToEvents(); showToast('Order confirmed! Check your email for tickets.', 'success'); }
+        // ===== Customer accounts (Sign in vs Continue as guest) =====
+        function sfTenant(){ try{ var q=new URLSearchParams(location.search).get('tenant'); return q||localStorage.getItem('evinra-sf-tenant'); }catch(e){ return null; } }
+        function sfAuthBase(){ return ((window.EvinraDB && EvinraDB.SERVICE) ? EvinraDB.SERVICE : 'http://localhost:4000') + '/api/auth'; }
+        function sfAuthMode(m){
+            if(state.customer) return;
+            state.authMode = m;
+            const g = m === 'guest';
+            document.getElementById('tabGuest').classList.toggle('on', g);
+            document.getElementById('tabSignin').classList.toggle('on', !g);
+            document.getElementById('signinPanel').style.display = g ? 'none' : 'block';
+            document.getElementById('buyerForm').style.display = g ? 'block' : 'none';
+            document.getElementById('guestHint').style.display = g ? 'block' : 'none';
+        }
+        function sfToggleSignup(e){
+            if(e) e.preventDefault();
+            state.signupMode = !state.signupMode;
+            document.getElementById('signupExtra').style.display = state.signupMode ? 'block' : 'none';
+            document.getElementById('siBtn').textContent = state.signupMode ? 'Create account' : 'Sign in';
+            document.getElementById('siSwitchText').textContent = state.signupMode ? 'Already have an account?' : 'New customer?';
+            document.getElementById('siSwitchLink').textContent = state.signupMode ? 'Sign in' : 'Create an account';
+        }
+        async function sfDoAuth(){
+            const tenant = sfTenant();
+            if(!tenant){ showToast('Accounts are unavailable here', 'error'); return; }
+            const email = document.getElementById('siEmail').value.trim();
+            const pass = document.getElementById('siPass').value;
+            if(!email || !pass){ showToast('Enter your email and password', 'error'); return; }
+            const btn = document.getElementById('siBtn'); const orig = btn.textContent; btn.disabled = true; btn.textContent = 'Please wait…';
+            try{
+                const body = { tenant_id: tenant, email, password: pass };
+                let path = '/customer-login';
+                if(state.signupMode){ body.first = document.getElementById('suFirst').value.trim(); body.last = document.getElementById('suLast').value.trim(); body.phone = document.getElementById('suPhone').value.trim(); path = '/customer-signup'; }
+                const r = await fetch(sfAuthBase() + path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+                const d = await r.json(); if(!r.ok) throw new Error(d.error || 'Could not sign in');
+                sfApplyCustomer(d.customer, true);
+                showToast(state.signupMode ? 'Account created — welcome!' : 'Signed in', 'success');
+            }catch(err){ showToast(err.message, 'error'); }
+            finally{ btn.disabled = false; btn.textContent = orig; }
+        }
+        function sfApplyCustomer(c, persist){
+            state.customer = c;
+            if(persist){ try{ localStorage.setItem('evinra-sf-customer', JSON.stringify(c)); }catch(e){} }
+            const set = (id,v) => { const el = document.getElementById(id); if(el && v != null) el.value = v; };
+            set('firstName', c.first); set('lastName', c.last); set('email', c.email); set('phone', c.phone);
+            state.buyer.firstName = c.first || ''; state.buyer.lastName = c.last || '';
+            sfRenderAccount();
+        }
+        function sfSignOut(){
+            state.customer = null; state.authMode = 'guest'; state.signupMode = false;
+            try{ localStorage.removeItem('evinra-sf-customer'); }catch(e){}
+            ['firstName','lastName','email','phone'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+            sfRenderAccount();
+        }
+        function sfRestoreCustomer(){
+            try{
+                const raw = localStorage.getItem('evinra-sf-customer'); if(!raw) return;
+                const c = JSON.parse(raw);
+                if(c && c.tenant_id === sfTenant()) sfApplyCustomer(c, false);
+                else if(c) localStorage.removeItem('evinra-sf-customer');
+            }catch(e){}
+        }
+        function sfRenderAccount(){
+            const chooser = document.getElementById('acctChooser'); if(!chooser) return;
+            const signedin = document.getElementById('acctSignedin'), signin = document.getElementById('signinPanel'),
+                  form = document.getElementById('buyerForm'), hint = document.getElementById('guestHint'),
+                  tabSignin = document.getElementById('tabSignin');
+            if(!sfTenant() && tabSignin) tabSignin.style.display = 'none'; // accounts are per-tenant
+            if(state.customer){
+                chooser.style.display = 'none'; signin.style.display = 'none'; hint.style.display = 'none'; form.style.display = 'block';
+                const nm = [state.customer.first, state.customer.last].filter(Boolean).join(' ') || state.customer.email;
+                const init = (nm || '?').trim().split(/\s+/).map(w => w[0]).join('').slice(0,2).toUpperCase();
+                signedin.style.display = 'flex';
+                signedin.innerHTML = '<div class="acct-av">'+init+'</div><div class="acct-info"><div class="acct-name">'+nm+'</div><div class="acct-email">'+state.customer.email+'</div></div><button type="button" class="acct-out" onclick="sfSignOut()">Sign out</button>';
+            } else {
+                signedin.style.display = 'none'; chooser.style.display = 'flex';
+                sfAuthMode(state.authMode || 'guest');
+            }
+        }
         function validateDetails() {
+            if(state.authMode === 'signin' && !state.customer){ showToast('Sign in, or choose “Continue as guest”', 'info'); return false; }
             const first = document.getElementById('firstName').value.trim();
             const last = document.getElementById('lastName').value.trim();
             const email = document.getElementById('email').value.trim();
@@ -1001,7 +1107,7 @@
             const back = to => `<button class="btn-secondary" onclick="goStep(${to})">Back</button>`;
             if (n === 1) { initSeatsio(); renderSeatChips(); updateSeatCounter(); updateSeatSummary(); footer.innerHTML = `<button class="btn-primary" onclick="goStep(2)">Continue</button>`; }
             else if (n === 2) { renderAddons(); footer.innerHTML = back(1) + `<button class="btn-primary" onclick="goStep(3)">Continue</button>`; }
-            else if (n === 3) { footer.innerHTML = back(2) + `<button class="btn-primary" onclick="goStep(4)">Continue</button>`; }
+            else if (n === 3) { sfRenderAccount(); footer.innerHTML = back(2) + `<button class="btn-primary" onclick="goStep(4)">Continue</button>`; }
             else if (n === 4) { renderPayment(); footer.innerHTML = back(3) + `<button class="btn-primary" onclick="goStep(5)">Place Order</button>`; }
             else if (n === 5) { renderConfirm(); footer.innerHTML = `<button class="btn-primary" onclick="finishCheckout()">Done</button>`; }
         }
@@ -1159,6 +1265,7 @@
                     custName:   fullName || 'Online Customer',
                     custEmail:  email,
                     custPhone:  phone,
+                    custId:     state.customer ? state.customer.id : '',
                     payment:    payment,
                     last4:      '',
                     tickets:    Object.values(ticketsByCat),
