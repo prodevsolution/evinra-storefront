@@ -105,6 +105,9 @@
         .step.active { display: block; animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .step-title { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text2); margin: 0 0 12px; }
+        .guest-tag { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; padding: 3px 9px; border-radius: 999px; background: var(--teal-dim, rgba(45,184,156,.14)); color: var(--teal-light); border: 1px solid rgba(45,184,156,.32); font-size: 10px; font-weight: 700; letter-spacing: .3px; text-transform: none; }
+        .guest-tag svg { width: 11px; height: 11px; }
+        .opt-tag { font-size: 11px; font-weight: 500; color: var(--text4, #6b7d99); text-transform: none; letter-spacing: 0; }
         .step-title::after { content: ''; flex: 1; height: 1px; background: var(--bg3); }
         .panel-section-title { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text2); margin: 22px 0 12px; }
         .panel-section-title::after { content: ''; flex: 1; height: 1px; background: var(--bg3); }
@@ -562,13 +565,13 @@
           <div id="addonList"></div>
         </div>
         <div class="step" id="step3">
-          <h3 class="step-title">Customer Information</h3>
-          <p class="field-hint">We'll send your tickets and receipt to this email.</p>
+          <h3 class="step-title">Customer Information <span class="guest-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Guest checkout</span></h3>
+          <p class="field-hint">No account needed — we'll email your tickets &amp; receipt.</p>
           <form id="buyerForm" onsubmit="goStep(4); return false;">
             <div class="form-group"><label class="form-label" for="firstName">First Name *</label><input class="form-input" type="text" id="firstName" placeholder="John" autocomplete="given-name" required></div>
             <div class="form-group"><label class="form-label" for="lastName">Last Name *</label><input class="form-input" type="text" id="lastName" placeholder="Doe" autocomplete="family-name" required></div>
             <div class="form-group"><label class="form-label" for="email">Email *</label><input class="form-input" type="email" id="email" placeholder="john@example.com" autocomplete="email" required></div>
-            <div class="form-group"><label class="form-label" for="phone">Phone *</label><input class="form-input" type="tel" id="phone" placeholder="+1 (555) 000-0000" autocomplete="tel" required></div>
+            <div class="form-group"><label class="form-label" for="phone">Phone <span class="opt-tag">optional</span></label><input class="form-input" type="tel" id="phone" placeholder="+1 (555) 000-0000" autocomplete="tel"></div>
             <button type="submit" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;" aria-hidden="true" tabindex="-1">Submit</button>
           </form>
         </div>
@@ -964,7 +967,14 @@
         function closeCheckout() { document.getElementById('checkoutView').classList.remove('show'); document.documentElement.style.overflow = ''; document.body.style.overflow = ''; resetSeatSelection(); }
         function checkoutBack() { if (state.step === 5) { finishCheckout(); return; } if (state.step === 1) { state.cart.clear(); updateUI(); backToEvents(); return; } goStep(state.step - 1); }
         function finishCheckout() { state.cart.clear(); updateUI(); closeCheckout(); backToEvents(); showToast('Order confirmed! Check your email for tickets.', 'success'); }
-        function validateDetails() { const f = ['firstName', 'lastName', 'email', 'phone'].map(id => document.getElementById(id).value.trim()); if (f.some(v => !v)) { showToast('Please fill all fields', 'error'); return false; } return true; }
+        function validateDetails() {
+            const first = document.getElementById('firstName').value.trim();
+            const last = document.getElementById('lastName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            if (!first || !last || !email) { showToast('Enter your name and email', 'error'); return false; }
+            if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { showToast('Enter a valid email', 'error'); return false; }
+            return true; // phone is optional for guest checkout
+        }
         function goStep(target) { if (target > state.step && state.step === 1 && state.cart.size === 0) { showToast('Select at least one seat to continue', 'info'); return; } if (target > state.step && state.step === 3 && !validateDetails()) return; if (target < 1) { closeCheckout(); return; } renderStep(target); }
         function renderWizBar(n) {
             let html = '';
