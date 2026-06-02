@@ -119,6 +119,24 @@
         .acct-signedin .acct-email { font-size: 11px; color: var(--text3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .acct-signedin .acct-out { flex-shrink: 0; background: none; border: 1px solid var(--bg4, rgba(255,255,255,.18)); color: var(--text2); font-size: 11px; font-weight: 600; padding: 6px 11px; border-radius: 8px; cursor: pointer; font-family: inherit; }
         .acct-signedin .acct-out:hover { color: var(--text1); }
+        .refund-card { position: relative; border: 1px solid var(--bg3); border-radius: 14px; padding: 16px; margin-bottom: 4px; background: var(--bg1); }
+        .refund-badge { position: absolute; top: -10px; left: 14px; background: #E11D48; color: #fff; font-size: 10px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; padding: 3px 9px; border-radius: 6px; }
+        .refund-title { display: flex; align-items: center; gap: 8px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 17px; color: var(--text1); margin: 6px 0 12px; }
+        .refund-title svg { width: 18px; height: 18px; color: var(--teal-light); flex-shrink: 0; }
+        .refund-perks { list-style: none; margin: 0 0 12px; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; }
+        .refund-perks li { position: relative; padding-left: 22px; font-size: 12.5px; color: var(--text2); line-height: 1.4; }
+        .refund-perks li::before { content: ''; position: absolute; left: 2px; top: 4px; width: 10px; height: 6px; border-left: 2px solid var(--teal-light); border-bottom: 2px solid var(--teal-light); transform: rotate(-45deg); }
+        .refund-note { font-size: 12px; color: var(--text3); line-height: 1.5; margin: 0 0 14px; }
+        .refund-opts { display: flex; flex-direction: column; gap: 8px; }
+        .refund-opt { display: flex; align-items: center; gap: 11px; width: 100%; padding: 13px 14px; border: 1.5px solid var(--bg3); border-radius: 11px; background: var(--bg2); cursor: pointer; font-family: inherit; transition: border-color .15s ease-out, background .15s ease-out; text-align: left; min-height: 50px; }
+        .refund-opt:hover { border-color: var(--bg4, rgba(255,255,255,.2)); }
+        .refund-opt.selected { border-color: var(--teal); background: var(--teal-dim, rgba(45,184,156,.1)); }
+        .refund-radio { width: 18px; height: 18px; flex-shrink: 0; border-radius: 50%; border: 2px solid var(--text4, #6b7d99); position: relative; }
+        .refund-opt.selected .refund-radio { border-color: var(--teal); }
+        .refund-opt.selected .refund-radio::after { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--teal); }
+        .refund-x { width: 18px; flex-shrink: 0; text-align: center; color: #E11D48; font-weight: 700; }
+        .refund-opt-label { flex: 1; font-size: 13.5px; font-weight: 600; color: var(--text1); }
+        .refund-opt-price { font-size: 13.5px; font-weight: 700; color: var(--teal-light); font-variant-numeric: tabular-nums; }
         .step-title::after { content: ''; flex: 1; height: 1px; background: var(--bg3); }
         .panel-section-title { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text2); margin: 22px 0 12px; }
         .panel-section-title::after { content: ''; flex: 1; height: 1px; background: var(--bg3); }
@@ -603,7 +621,9 @@
           </form>
         </div>
         <div class="step" id="step4">
-          <h3 class="step-title">Payment Method</h3>
+          <h3 class="step-title">Ticket Protection</h3>
+          <div id="refundProtect"></div>
+          <h4 class="panel-section-title">Payment Method</h4>
           <div class="pay-methods" id="payMethods"></div>
           <h4 class="panel-section-title">Promo Code</h4>
           <div class="promo-row">
@@ -623,7 +643,7 @@
       <div class="checkout-footer" id="checkoutFooter"></div>
     </div>
     <div class="toast-container" id="toastContainer"></div>
-    <script>const state = { cart: new Map(), category: 'tickets', step: 1, selectedDate: null, selectedTime: null, buyer: {}, event: null, func: null, customer: null, authMode: 'guest', signupMode: false };
+    <script>const state = { cart: new Map(), category: 'tickets', step: 1, selectedDate: null, selectedTime: null, buyer: {}, event: null, func: null, customer: null, authMode: 'guest', signupMode: false, refundable: false };
         // ===== Demo fallback data (used when :4000 is unreachable) =====
         const _DEMO_PRODUCTS = { tickets: [{ id: 't1', name: 'General Admission', desc: 'Park entry & unlimited rides', price: 24, per: 'per person', popular: true, max: 20 }, { id: 't2', name: 'VIP Fast Pass', desc: 'Skip lines + lounge access', price: 49, per: 'per person', max: 10 }, { id: 't3', name: 'Family Bundle', desc: '4 tickets + parking', price: 79, per: 'per family', max: 5 }], parking: [{ id: 'p1', name: 'Standard Parking', desc: 'Surface lot parking', price: 10, per: 'per car', popular: true, max: 50 }, { id: 'p2', name: 'Premium Parking', desc: 'Close to entrance', price: 20, per: 'per car', max: 20 }, { id: 'p3', name: 'Valet Parking', desc: 'Full valet service', price: 35, per: 'per car', max: 10 }], food: [{ id: 'f1', name: 'Meal Voucher', desc: '$30 food credit', price: 25, per: 'per voucher', popular: true, max: 100 }, { id: 'f2', name: 'Beverage Package', desc: '4 drink tickets', price: 18, per: 'per package', max: 50 }, { id: 'f3', name: 'Gourmet Dining', desc: 'Premium meal experience', price: 55, per: 'per person', max: 30 }], experiences: [{ id: 'e1', name: 'Meet & Greet', desc: 'Exclusive artist meet', price: 75, per: 'per person', popular: true, max: 15 }, { id: 'e2', name: 'VIP Lounge', desc: 'All-day lounge access', price: 45, per: 'per person', max: 25 }, { id: 'e3', name: 'Photo Package', desc: 'Professional photos', price: 60, per: 'per person', max: 20 }], merch: [{ id: 'm1', name: 'Event T-Shirt', desc: 'Official commemorative tee', price: 24, per: 'per shirt', popular: true, max: 100 }, { id: 'm2', name: 'Merchandise Bundle', desc: 'Shirt + hat + pins', price: 45, per: 'per bundle', max: 50 }, { id: 'm3', name: 'Premium Hoodie', desc: 'Limited edition hoodie', price: 65, per: 'per hoodie', max: 30 }] };
         const _DEMO_BUNDLES = [{ name: 'The Classic', items: '2 GA + 1 Parking', orig: 58, price: 48, save: 10 }, { name: 'Family Day', items: '4 GA + 2 Parking + Meals', orig: 136, price: 99, save: 37 }, { name: 'VIP All-In', items: '2 VIP + Meet & Greet + Merch', orig: 213, price: 159, save: 54 }];
@@ -941,6 +961,7 @@
         function cartTotal() { return Array.from(state.cart.values()).reduce((s, i) => s + i.price * i.qty, 0); }
         const SERVICE_FEE_RATE = 0.12;
         const PROCESSING_FEE = 5;
+        const REFUND_RATE = 0.08; // refundable-ticket protection fee (% of net)
         function round2(n) { return Math.round(n * 100) / 100; }
         function money(n) { return '$' + Number(n).toFixed(2); }
         function orderTotals() {
@@ -949,9 +970,11 @@
             const net = subtotal - discount;
             const fee = subtotal > 0 ? round2(net * SERVICE_FEE_RATE) : 0;
             const processing = subtotal > 0 ? PROCESSING_FEE : 0;
-            const total = round2(net + fee + processing);
-            return { subtotal, discount, net, fee, processing, total };
+            const refund = (state.refundable && subtotal > 0) ? round2(net * REFUND_RATE) : 0;
+            const total = round2(net + fee + processing + refund);
+            return { subtotal, discount, net, fee, processing, refund, total };
         }
+        function refundFeePreview() { const t = orderTotals(); return round2((t.net) * REFUND_RATE); }
         function renderOrderSummary() {
             const card = document.getElementById('orderSummaryCard');
             if (!card || !state.event) return;
@@ -985,12 +1008,13 @@
             if (t.discount > 0) lines += `<div class="os-line disc"><span>Promo ${state.promoCode}</span><span class="os-line-v">−${money(t.discount)}</span></div>`;
             lines += `<div class="os-line"><span>Service Fee</span><span class="os-line-v">${money(t.fee)}</span></div>`;
             lines += `<div class="os-line"><span>Processing</span><span class="os-line-v">${money(t.processing)}</span></div>`;
+            if (t.refund > 0) lines += `<div class="os-line"><span>Refund protection</span><span class="os-line-v">${money(t.refund)}</span></div>`;
             const ctaMap = { 1: ['Continue', 2], 2: ['Continue', 3], 3: ['Continue', 4], 4: ['Place Order', 5] };
             const cta = ctaMap[state.step];
             const ctaHtml = cta ? `<button class="os-cta" onclick="goStep(${cta[1]})">${cta[0]} ${ICON_ARROW}</button>` : '';
             card.innerHTML = `<h3 class="os-title">Order Summary</h3>${ctx}${seatsHtml}${addonsHtml}<div class="os-divider"></div>${lines}<div class="os-total"><span class="os-total-label">Total</span><span class="os-total-value">${money(t.total)}</span></div>${ctaHtml}<div class="os-trust">${ICON_LOCK}Secure checkout powered by Evinra Pay</div>`;
         }
-        function openCheckout() { state.step = 1; state.payMethod = 'card'; state.promoPct = 0; state.promoCode = ''; addonMode = 'rides'; document.getElementById('checkoutView').classList.add('show'); document.documentElement.style.overflow = 'hidden'; document.body.style.overflow = 'hidden'; resetSeatSelection(); sfRestoreCustomer(); renderStep(1); setTimeout(() => { const b = document.querySelector('.checkout-back'); if (b) b.focus(); }, 60); }
+        function openCheckout() { state.step = 1; state.payMethod = 'card'; state.promoPct = 0; state.promoCode = ''; state.refundable = false; addonMode = 'rides'; document.getElementById('checkoutView').classList.add('show'); document.documentElement.style.overflow = 'hidden'; document.body.style.overflow = 'hidden'; resetSeatSelection(); sfRestoreCustomer(); renderStep(1); setTimeout(() => { const b = document.querySelector('.checkout-back'); if (b) b.focus(); }, 60); }
         function closeCheckout() { document.getElementById('checkoutView').classList.remove('show'); document.documentElement.style.overflow = ''; document.body.style.overflow = ''; resetSeatSelection(); }
         function checkoutBack() { if (state.step === 5) { finishCheckout(); return; } if (state.step === 1) { state.cart.clear(); updateUI(); backToEvents(); return; } goStep(state.step - 1); }
         function finishCheckout() { state.cart.clear(); updateUI(); closeCheckout(); backToEvents(); showToast('Order confirmed! Check your email for tickets.', 'success'); }
@@ -1159,9 +1183,27 @@
         function addonAdd(id) { const a = findAddon(id); if (!a) return; if (!state.cart.has(id)) state.cart.set(id, { name: a.name, price: a.price, qty: 1, max: ADDON_MAX }); updateUI(); renderAddons(); showToast(`${a.name} added`, 'success'); }
         function addonQty(id, delta) { const it = state.cart.get(id); if (!it) return; it.qty += delta; if (it.qty <= 0) state.cart.delete(id); else if (it.qty > ADDON_MAX) it.qty = ADDON_MAX; updateUI(); renderAddons(); }
         function renderPayment() {
+            renderRefundProtect();
             document.getElementById('payMethods').innerHTML = PAY_METHODS.map(m => `<div class="pay-method${state.payMethod === m.id ? ' selected' : ''}" role="radio" aria-checked="${state.payMethod === m.id}" tabindex="0" onclick="selectPay('${m.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectPay('${m.id}')}">${m.icon}<span class="pay-method-label">${m.label}</span><span class="pay-radio"></span></div>`).join('');
         }
         function selectPay(id) { state.payMethod = id; renderPayment(); }
+        const REFUND_PERKS = ['Accident &amp; illness', 'Family or home emergency', 'Stolen documents', 'Pre-existing medical condition', 'Transport disruptions', 'And many more'];
+        function renderRefundProtect() {
+            const el = document.getElementById('refundProtect'); if (!el) return;
+            const fee = refundFeePreview();
+            const on = !!state.refundable;
+            el.innerHTML = `<div class="refund-card">
+                <span class="refund-badge">Recommended</span>
+                <div class="refund-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Make my ticket refundable</div>
+                <ul class="refund-perks">${REFUND_PERKS.map(p => `<li>${p}</li>`).join('')}</ul>
+                <p class="refund-note">No stress, no hassle — if you can't make it and have supporting evidence, we'll refund your tickets in full.</p>
+                <div class="refund-opts" role="radiogroup" aria-label="Refund protection">
+                    <button type="button" class="refund-opt${on ? ' selected' : ''}" role="radio" aria-checked="${on}" onclick="setRefundable(true)"><span class="refund-radio"></span><span class="refund-opt-label">Refundable Ticket</span><span class="refund-opt-price">+${money(fee)}</span></button>
+                    <button type="button" class="refund-opt no${!on ? ' selected' : ''}" role="radio" aria-checked="${!on}" onclick="setRefundable(false)"><span class="refund-x">✕</span><span class="refund-opt-label">Non-refundable Ticket</span></button>
+                </div>
+            </div>`;
+        }
+        function setRefundable(v) { state.refundable = !!v; renderRefundProtect(); renderOrderSummary(); }
         function applyPromo() {
             const code = document.getElementById('promoInput').value.trim().toUpperCase();
             if (!code) { showToast('Enter a promo code', 'info'); return; }
@@ -1266,6 +1308,8 @@
                     custEmail:  email,
                     custPhone:  phone,
                     custId:     state.customer ? state.customer.id : '',
+                    refundable: !!state.refundable,
+                    refundFee:  t.refund || 0,
                     payment:    payment,
                     last4:      '',
                     tickets:    Object.values(ticketsByCat),
