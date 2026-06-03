@@ -1061,6 +1061,39 @@
             }).catch(function(){});
           }catch(e){}
         })();
+        // Marketing: capture the buyer into the tenant's `customers` collection on purchase.
+        // Upsert by (tenant_id, email): create if new, backfill name/phone if missing. Non-blocking.
+        function sfUpsertCustomer(fullName, email, phone){
+          try{
+            email = String(email||'').trim().toLowerCase();
+            var tn = sfTenant();
+            if(!tn || !email || email.indexOf('@')<0) return;
+            var base = ((window.EvinraDB&&EvinraDB.SERVICE)?EvinraDB.SERVICE:'http://localhost:4000')+'/api/db';
+            var parts = String(fullName||'').trim().split(/\s+/);
+            var first = parts.shift() || '';
+            var last  = parts.join(' ');
+            fetch(base+'/customers?tenant_id=eq.'+encodeURIComponent(tn)+'&email=eq.'+encodeURIComponent(email))
+              .then(function(r){ return r.json(); })
+              .then(function(rows){
+                var ex = Array.isArray(rows) ? rows[0] : null;
+                if(ex){
+                  // Backfill only empty fields so we never clobber data the customer set themselves.
+                  var patch = {};
+                  if(!ex.first && first) patch.first = first;
+                  if(!ex.last  && last)  patch.last  = last;
+                  if(!ex.phone && phone) patch.phone = phone;
+                  if(Object.keys(patch).length){
+                    fetch(base+'/customers?_id=eq.'+encodeURIComponent(ex.id||ex._id),
+                      {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)}).catch(function(){});
+                  }
+                } else {
+                  fetch(base+'/customers',
+                    {method:'POST',headers:{'Content-Type':'application/json'},
+                     body:JSON.stringify({tenant_id:tn, first:first, last:last, email:email, phone:phone||''})}).catch(function(){});
+                }
+              }).catch(function(){});
+          }catch(e){}
+        }
         function sfAuthBase(){ return ((window.EvinraDB && EvinraDB.SERVICE) ? EvinraDB.SERVICE : 'http://localhost:4000') + '/api/auth'; }
         function sfAuthMode(m){
             if(state.customer) return;
@@ -1366,6 +1399,8 @@
                 EvinraDB.saveOrder(order)
                     .then(() => console.log('Storefront: order saved to shared-db', orderNum))
                     .catch(err => console.warn('Storefront: saveOrder failed (order shown locally only)', err));
+                // Capture the buyer as a tenant customer for marketing (guest or signed-in).
+                sfUpsertCustomer(fullName, email, phone);
             } catch (err) {
                 console.warn('Storefront: could not build order payload', err);
             }
