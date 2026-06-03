@@ -1377,6 +1377,7 @@
                     orderNum:   orderNum,
                     channel:    'storefront',
                     show:       state.event ? state.event.name : '',
+                    eventId:    state.event ? (state.event.id || state.event.eventId || '') : '',
                     eventLabel: [state.selectedDate, state.selectedTime].filter(Boolean).join(' · '),
                     custName:   fullName || 'Online Customer',
                     custEmail:  email,
