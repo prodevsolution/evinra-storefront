@@ -1375,7 +1375,10 @@
         function toggleTheme() { const current = document.documentElement.getAttribute('data-theme'); const next = current === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', next); localStorage.setItem('evinra-theme', next); updateThemeButton(); }
         function updateThemeButton() { const theme = document.documentElement.getAttribute('data-theme'); const btn = document.getElementById('themeToggle'); btn.innerHTML = theme === 'dark' ? ICON_SUN : ICON_MOON; btn.setAttribute('aria-label', theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'); }
         function switchNav(page) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); document.querySelector(`.nav-item[onclick*="'${page}'"]`)?.classList.add('active'); if (page === 'explore') { backToEvents(); } else { showToast(`${page.charAt(0).toUpperCase() + page.slice(1)} — coming soon`, 'info'); } }
-        document.addEventListener('DOMContentLoaded', () => { initTheme(); document.getElementById('themeToggle').addEventListener('click', toggleTheme); renderFilters(); renderDateOptions(); setView(localStorage.getItem('evinra-view') || 'list'); });
+        document.addEventListener('DOMContentLoaded', () => { initTheme(); document.getElementById('themeToggle').addEventListener('click', toggleTheme); renderFilters(); renderDateOptions(); setView(localStorage.getItem('evinra-view') || 'list');
+          // Referral deep link: ?event=<id> opens that event's purchase flow (vendor attribution already captured).
+          try{ var ep=new URLSearchParams(location.search).get('event'); if(ep){ var f=FUNCTIONS.find(function(x){ return String(x.eventId)===String(ep); }); if(f) setTimeout(function(){ openFunction(f.id); }, 60); } }catch(e){}
+        });
     </script>
 </body>
 </html>
