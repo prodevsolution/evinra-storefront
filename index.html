@@ -1045,6 +1045,22 @@
         function finishCheckout() { state.cart.clear(); updateUI(); closeCheckout(); backToEvents(); showToast('Order confirmed! Check your email for tickets.', 'success'); }
         // ===== Customer accounts (Sign in vs Continue as guest) =====
         function sfTenant(){ try{ var q=new URLSearchParams(location.search).get('tenant'); return q||localStorage.getItem('evinra-sf-tenant'); }catch(e){ return null; } }
+        // Referral attribution: capture ?vendor=CODE (persisted), and count a click once per session.
+        function sfVendorCode(){ try{ var q=new URLSearchParams(location.search).get('vendor'); if(q){ localStorage.setItem('evinra-sf-vendor', q); return q; } return localStorage.getItem('evinra-sf-vendor')||''; }catch(e){ return ''; } }
+        (function _sfTrackVendorClick(){
+          try{
+            var code=sfVendorCode(); if(!code) return;
+            var seenKey='evinra-sf-vendclick-'+code;
+            if(sessionStorage.getItem(seenKey)) return;          // count once per browser session
+            sessionStorage.setItem(seenKey,'1');
+            var base=((window.EvinraDB&&EvinraDB.SERVICE)?EvinraDB.SERVICE:'http://localhost:4000')+'/api/db';
+            var tn=sfTenant();
+            fetch(base+'/vendors?code=eq.'+encodeURIComponent(code)+(tn?('&tenant_id=eq.'+encodeURIComponent(tn)):'')).then(function(r){return r.json();}).then(function(rows){
+              var v=Array.isArray(rows)?rows[0]:null; if(!v) return; var id=v.id||v._id;
+              fetch(base+'/vendors?_id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({clicks:(Number(v.clicks)||0)+1})}).catch(function(){});
+            }).catch(function(){});
+          }catch(e){}
+        })();
         function sfAuthBase(){ return ((window.EvinraDB && EvinraDB.SERVICE) ? EvinraDB.SERVICE : 'http://localhost:4000') + '/api/auth'; }
         function sfAuthMode(m){
             if(state.customer) return;
