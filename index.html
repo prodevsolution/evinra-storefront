@@ -689,10 +689,12 @@
 
         (function loadStorefrontData() {
             const BASE = ((window.EvinraDB && EvinraDB.SERVICE) ? EvinraDB.SERVICE : 'http://localhost:4000') + '/api/db';
-            // Which company's storefront is this? ?tenant=<id> (persisted) → per-tenant brand + catalogue.
-            const TENANT = (function(){ try { var q=new URLSearchParams(location.search).get('tenant'); if(q){ localStorage.setItem('evinra-sf-tenant', q); return q; } return localStorage.getItem('evinra-sf-tenant'); } catch(e){ return null; } })();
+            // Which company's storefront is this? STRICT: the company MUST be in the
+            // URL (?tenant=<id>) every session. A persisted value is NOT used as a
+            // fallback — an order can only be attributed to the company in the link.
+            const TENANT = (function(){ try { var q=new URLSearchParams(location.search).get('tenant'); if(q){ localStorage.setItem('evinra-sf-tenant', q); } return q || null; } catch(e){ return null; } })();
 
-            // No company → no service. Don't load any catalogue; show the unavailable page.
+            // No ?tenant= in the URL → no service. Don't load any catalogue.
             if (!TENANT) { window.EVENTS = []; window.PRODUCTS = []; window.BUNDLES = []; sfShowNoService(); return; }
             function xhrGet(url) {
                 try {
