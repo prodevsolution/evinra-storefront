@@ -1432,6 +1432,7 @@
                 const order = {
                     orderNum:   orderNum,
                     channel:    'storefront',
+                    vendorCode: sfVendorCode(),   // referral attribution (?vendor=CODE), persisted as vendor_code
                     show:       state.event ? state.event.name : '',
                     eventId:    state.event ? (state.event.id || state.event.eventId || '') : '',
                     eventLabel: [state.selectedDate, state.selectedTime].filter(Boolean).join(' · '),
