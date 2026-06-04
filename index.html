@@ -792,7 +792,8 @@
                     venue:     (e.venue || e.location_name || (e.location && e.location.name) || 'Venue TBD'),
                     address:   e.address || '',
                     city:      e.city || '',
-                    state:     e.state || '',
+                    // State isn't stored separately — derive the 2-letter code from the address.
+                    state:     e.state || (function(){ var m=String(e.address||'').match(/\b([A-Z]{2})\s+\d{5}(?:-\d{4})?\b/); return m ? m[1] : ((String(e.address||'').match(/,\s*([A-Za-z]{2})(?:,\s*USA?)?\s*$/)||[])[1]||'').toUpperCase(); })(),
                     status:    e.status === 'published' ? 'live' : 'upcoming',
                     from:      minPrice,
                     tag:       (show.type || e.type || 'Event'),
@@ -956,8 +957,8 @@
             const ctaIcon = soon
                 ? `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`
                 : `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>`;
-            const fullAddr = e.address || [e.city, e.state].filter(Boolean).join(', ') || 'Address TBD';
-            return `<button class="func-row${soon ? ' is-soon' : ''}" aria-label="${e.venue}, ${fullAddr}, ${f.day} ${f.time}, ${ctaLabel}" onclick="${action}"><span class="lr-thumb" style="background:${e.gradient}"><img class="lr-thumb-img" src="${e.img}" alt="" width="56" height="72" loading="lazy" onerror="this.remove()"></span><span class="lr-text"><span class="lr-date">${f.day} · ${f.time}</span><span class="lr-title">${e.venue}</span><span class="lr-venue"><span class="lr-loc">${fullAddr}</span></span><span class="lr-meta">${meta}</span></span><span class="lr-cta${soon ? ' is-soon' : ''}">${ctaIcon}<span class="lr-cta-label">${ctaLabel}</span></span></button>`;
+            const cityState = [e.city, e.state].filter(Boolean).join(', ') || 'Location TBD';
+            return `<button class="func-row${soon ? ' is-soon' : ''}" aria-label="${e.venue}, ${cityState}, ${f.day} ${f.time}, ${ctaLabel}" onclick="${action}"><span class="lr-thumb" style="background:${e.gradient}"><img class="lr-thumb-img" src="${e.img}" alt="" width="56" height="72" loading="lazy" onerror="this.remove()"></span><span class="lr-text"><span class="lr-date">${f.day} · ${f.time}</span><span class="lr-title">${e.venue}</span><span class="lr-venue"><span class="lr-loc">${cityState}</span></span><span class="lr-meta">${meta}</span></span><span class="lr-cta${soon ? ' is-soon' : ''}">${ctaIcon}<span class="lr-cta-label">${ctaLabel}</span></span></button>`;
         }
         function functionCard(f) {
             const e = f.event, soon = e.status === 'soon';
@@ -965,8 +966,8 @@
             const status = e.status === 'live' ? '<span class="live-dot"></span>Live' : e.status === 'onsale' ? 'On Sale' : 'Soon';
             const price = soon ? 'Notify Me' : (e.from ? `from <strong>$${e.from}</strong>` : '<strong>Free</strong>');
             const arrow = soon ? '' : `<span class="foot-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></span>`;
-            const fullAddr = e.address || [e.city, e.state].filter(Boolean).join(', ') || 'Address TBD';
-            return `<button class="event-card${soon ? ' is-soon' : ''}" aria-label="${e.venue}, ${fullAddr}, ${f.day} ${f.time}" onclick="${action}"><span class="event-banner" style="background:${e.gradient}"><img class="event-banner-img" src="${e.img}" alt="" loading="lazy" onerror="this.remove()"><span class="event-tag">${e.tag}</span><span class="event-status ${e.status}">${status}</span><span class="event-when"><span class="ew-time">${f.time}</span><span class="ew-day">${f.day}</span></span></span><span class="event-body"><span class="event-name">${e.venue}</span><span class="event-venue">${PIN}<span class="ev-venue-text">${fullAddr}</span></span><span class="event-foot"><span class="event-from">${price}</span>${arrow}</span></span></button>`;
+            const cityState = [e.city, e.state].filter(Boolean).join(', ') || 'Location TBD';
+            return `<button class="event-card${soon ? ' is-soon' : ''}" aria-label="${e.venue}, ${cityState}, ${f.day} ${f.time}" onclick="${action}"><span class="event-banner" style="background:${e.gradient}"><img class="event-banner-img" src="${e.img}" alt="" loading="lazy" onerror="this.remove()"><span class="event-tag">${e.tag}</span><span class="event-status ${e.status}">${status}</span><span class="event-when"><span class="ew-time">${f.time}</span><span class="ew-day">${f.day}</span></span></span><span class="event-body"><span class="event-name">${e.venue}</span><span class="event-venue">${PIN}<span class="ev-venue-text">${cityState}</span></span><span class="event-foot"><span class="event-from">${price}</span>${arrow}</span></span></button>`;
         }
         function renderFilters() {
             const tags = ['all', ...new Set(EVENTS.map(e => e.tag))];
