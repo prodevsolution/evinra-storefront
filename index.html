@@ -665,10 +665,35 @@
             if(t.storefront_secondary){ r.setProperty('--navy',t.storefront_secondary); }
             if(t.storefront_logo){ var a=document.querySelector('.brand-logo'); if(a){ a.innerHTML='<img src="'+t.storefront_logo+'" alt="logo" style="height:26px;width:auto;display:block">'; } }
         }
+        // Full-screen "store unavailable" page — shown when the storefront is opened
+        // without a company (tenant). Orders can't be attributed to a company, so we
+        // don't load the catalogue at all and ask the visitor to use the official link.
+        function sfShowNoService() {
+            try {
+                var ov = document.createElement('div');
+                ov.id = 'sf-no-service';
+                ov.setAttribute('role', 'alert');
+                ov.style.cssText = "position:fixed;inset:0;z-index:100000;background:#071428;color:#EDF2F9;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:'Outfit',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+                ov.innerHTML =
+                    '<div style="max-width:420px">'
+                  + '<div style="font-family:\'Syne\',sans-serif;font-size:26px;font-weight:800;color:#2DD4BF;letter-spacing:.5px;margin-bottom:22px">evinra</div>'
+                  + '<div style="width:56px;height:56px;margin:0 auto 18px;border-radius:50%;background:rgba(45,212,191,.12);display:flex;align-items:center;justify-content:center">'
+                  +   '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+                  + '</div>'
+                  + '<h1 style="font-family:\'Syne\',sans-serif;font-size:22px;font-weight:700;margin:0 0 10px">Store unavailable</h1>'
+                  + '<p style="font-size:14px;line-height:1.65;color:#94AED4;margin:0">This store link is incomplete — it isn’t tied to an event company, so purchases can’t be processed here. Please open the store using the official link from your event organizer.</p>'
+                  + '</div>';
+                (document.body || document.documentElement).appendChild(ov);
+            } catch (e) {}
+        }
+
         (function loadStorefrontData() {
             const BASE = ((window.EvinraDB && EvinraDB.SERVICE) ? EvinraDB.SERVICE : 'http://localhost:4000') + '/api/db';
             // Which company's storefront is this? ?tenant=<id> (persisted) → per-tenant brand + catalogue.
             const TENANT = (function(){ try { var q=new URLSearchParams(location.search).get('tenant'); if(q){ localStorage.setItem('evinra-sf-tenant', q); return q; } return localStorage.getItem('evinra-sf-tenant'); } catch(e){ return null; } })();
+
+            // No company → no service. Don't load any catalogue; show the unavailable page.
+            if (!TENANT) { window.EVENTS = []; window.PRODUCTS = []; window.BUNDLES = []; sfShowNoService(); return; }
             function xhrGet(url) {
                 try {
                     const xhr = new XMLHttpRequest();
