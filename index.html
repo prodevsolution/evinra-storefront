@@ -755,6 +755,16 @@
                 });
             }
 
+            // Only list current/future events — drop past dates (and undated parents).
+            (function(){
+                var startToday = new Date(); startToday.setHours(0,0,0,0); var startTs = startToday.getTime();
+                rawEvents = rawEvents.filter(function(e){
+                    if (!e.start_at) return false;
+                    var d = new Date(String(e.start_at).replace(' ', 'T'));
+                    return !isNaN(d) && d.getTime() >= startTs;
+                });
+            })();
+
             // Map DB events → storefront EVENTS shape
             window.EVENTS = rawEvents.map(function(e) {
                 const tts = ttByEvent[e.id] || [];
