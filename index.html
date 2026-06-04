@@ -772,13 +772,16 @@
                 const minPrice = prices.length ? Math.min.apply(null, prices) : 0;
                 const show = showByEvent[e.id] || {};
 
-                // Parse day + time from start_at (ISO string or date string)
-                let day = '', time = '';
+                // Parse day + time + sortable timestamp from start_at
+                let day = '', time = '', startTs = null;
                 if (e.start_at) {
                     try {
-                        const d = new Date(e.start_at);
-                        day  = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                        time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                        const d = new Date(String(e.start_at).replace(' ', 'T'));
+                        if (!isNaN(d)) {
+                            day  = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                            time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                            startTs = d.getTime();
+                        } else { day = e.start_at; }
                     } catch (_) { day = e.start_at; }
                 }
 
@@ -800,7 +803,8 @@
                     gradient:  e.gradient || 'linear-gradient(135deg,#209991,#0C4A45)',
                     img:       e.img || e.image_url || '',
                     chart:     _chart,
-                    functions: (day || time) ? [{ day: day, time: time }] : []
+                    startTs:   startTs,
+                    functions: (day || time) ? [{ day: day, time: time, ts: startTs }] : []
                 };
             });
 
@@ -831,7 +835,7 @@
         var BUNDLES  = window.BUNDLES;
 
         const FUNCTIONS = [];
-        EVENTS.forEach(e => (e.functions || []).forEach((fn, i) => FUNCTIONS.push({ id: e.id + '-f' + i, eventId: e.id, event: e, day: fn.day, time: fn.time })));
+        EVENTS.forEach(e => (e.functions || []).forEach((fn, i) => FUNCTIONS.push({ id: e.id + '-f' + i, eventId: e.id, event: e, day: fn.day, time: fn.time, ts: (fn.ts != null ? fn.ts : e.startTs) })));
         const PIN = "<svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'/><circle cx='12' cy='10' r='3'/></svg>";
         const CLOCK = "<svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='9'/><path d='M12 7v5l3 2'/></svg>";
         const ICON_SUN = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><circle cx='12' cy='12' r='4'/><path d='M12 2v2'/><path d='M12 20v2'/><path d='m4.93 4.93 1.41 1.41'/><path d='m17.66 17.66 1.41 1.41'/><path d='M2 12h2'/><path d='M20 12h2'/><path d='m6.34 17.66-1.41 1.41'/><path d='m19.07 4.93-1.41 1.41'/></svg>";
@@ -975,7 +979,11 @@
         }
         function setFilter(t) { activeFilter = t; renderFilters(); renderFunctions(); }
         function renderDateOptions() {
-            const days = [...new Set(FUNCTIONS.map(f => f.day))];
+            // Unique days in chronological order (current → future).
+            const seen = {}; const days = [];
+            FUNCTIONS.slice().sort((a, b) => (a.ts ?? Infinity) - (b.ts ?? Infinity)).forEach(f => {
+                if (f.day && !seen[f.day]) { seen[f.day] = 1; days.push(f.day); }
+            });
             document.getElementById('dateFilter').innerHTML = `<option value="all">All dates</option>` + days.map(d => `<option value="${d}">${d}</option>`).join('');
         }
         function onSearchInput(v) { searchQuery = v.trim().toLowerCase(); clearTimeout(searchDebounce); searchDebounce = setTimeout(renderFunctions, 120); }
@@ -989,7 +997,8 @@
             renderFunctions();
         }
         function renderFunctions() {
-            let list = FUNCTIONS.slice().sort((a, b) => STATUS_ORDER[a.event.status] - STATUS_ORDER[b.event.status]);
+            // Sort current → future (soonest date first); undated last.
+            let list = FUNCTIONS.slice().sort((a, b) => (a.ts ?? Infinity) - (b.ts ?? Infinity));
             if (activeFilter !== 'all') list = list.filter(f => f.event.tag === activeFilter);
             if (dateFilter !== 'all') list = list.filter(f => f.day === dateFilter);
             if (searchQuery) list = list.filter(f => `${f.event.name} ${f.event.venue} ${f.event.city} ${f.event.tag}`.toLowerCase().includes(searchQuery));
