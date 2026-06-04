@@ -1400,8 +1400,9 @@
                 EvinraDB.saveOrder(order)
                     .then(() => console.log('Storefront: order saved to shared-db', orderNum))
                     .catch(err => console.warn('Storefront: saveOrder failed (order shown locally only)', err));
-                // Capture the buyer as a tenant customer for marketing (guest or signed-in).
-                sfUpsertCustomer(fullName, email, phone);
+                // Buyer is captured into `customers` server-side on order save
+                // (orders-api derives the tenant from the order's event) — reliable
+                // even without a ?tenant= link. (sfUpsertCustomer kept for reference.)
             } catch (err) {
                 console.warn('Storefront: could not build order payload', err);
             }
